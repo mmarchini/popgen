@@ -1,10 +1,7 @@
 
 import unittest
 
-from mingus.midi import fluidsynth
-from mingus.containers import Track
-
-from popgen import harmony, tempo
+from popgen import harmony
 
 
 class TestHarmony(unittest.TestCase):

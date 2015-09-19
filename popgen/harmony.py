@@ -2,11 +2,10 @@
 import random
 from decimal import Decimal as D
 from functools import partial
-from operator import getitem
 
 from scipy.stats import rv_discrete
 
-from mingus.core import scales, chords
+from mingus.core import chords
 
 determine = partial(chords.determine, shorthand=True, no_inversions=True)
 
