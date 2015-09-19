@@ -25,15 +25,15 @@ TODO
 These are the features that will be implemented in the near future:
 
 - Tempo
-  - User-defined distribution with discrete and continuous random values
+    - User-defined distribution with discrete and continuous random values
 - Rhythm Pattern
-  - Improved rules
-    - Hihat and ride note length probabilities based on tempo
-    - Improved rules for kicks distribution
-    - Improved rules for snare
-  - More isolation, allowing more customized rules
+    - Improved rules
+        - Hihat and ride note length probabilities based on tempo
+        - Improved rules for kicks distribution
+        - Improved rules for snare
+    - More isolation, allowing more customized rules
 - Rhythm Dynamics
 - Harmony
-  - Implementation of other modes (at least Aeolian/Minor scale)
+    - Implementation of other modes (at least Aeolian/Minor scale)
 - Phrasing
 - Melody
