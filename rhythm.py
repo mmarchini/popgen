@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 import random
 
 from mingus.containers import instrument
@@ -72,6 +73,12 @@ while bar.current_beat < bar.length:
     if duration != 16:
         if random.uniform(0, 100) < 80:
             note.add_note(drum.ride_cymbal_1())
+
+    if random.uniform(0, 100) < 80:
+        note.add_note(drum.acoustic_snare())
+
+    if random.uniform(0, 100) < 80:
+        note.add_note(drum.closed_hi_hat())
 
     bar.place_notes(note, duration)
 
