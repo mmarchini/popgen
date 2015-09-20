@@ -121,16 +121,16 @@ class Rhythm(object):
         return (self.drum.ride_cymbal_1(), rides)
 
     def generate_bar(self):
-        kick_note, kicks = self.generate_kicks()
-        ride_note, rides = self.generate_rides()
-        snare_note, snares = self.generate_snares()
-        hihat_note, hihats = self.generate_hihats()
+        beats = [
+            self.generate_kicks(),
+            self.generate_rides(),
+            self.generate_snares(),
+            self.generate_hihats(),
+        ]
 
         p = set()
-        p |= set(map(itemgetter(0), kicks))
-        p |= set(map(itemgetter(0), rides))
-        p |= set(map(itemgetter(0), snares))
-        p |= set(map(itemgetter(0), hihats))
+        for instr, beat in beats:
+            p |= set(map(itemgetter(0), beat))
 
         bar = Bar()
         for i in range(16):
@@ -138,26 +138,12 @@ class Rhythm(object):
 
         for i in sorted(p):
             note_containers = dict()
-            kick = (filter(lambda k: k[0] == i, kicks) or [None]).pop()
-            if kick:
-                container = note_containers.get(kick[1], NoteContainer())
-                container.add_note(kick_note)
-                note_containers[kick[1]] = container
-            ride = (filter(lambda r: r[0] == i, rides) or [None]).pop()
-            if ride:
-                container = note_containers.get(ride[1], NoteContainer())
-                container.add_note(ride_note)
-                note_containers[ride[1]] = container
-            snare = (filter(lambda s: s[0] == i, snares) or [None]).pop()
-            if snare:
-                container = note_containers.get(snare[1], NoteContainer())
-                container.add_note(snare_note)
-                note_containers[snare[1]] = container
-            hihat = (filter(lambda h: h[0] == i, hihats) or [None]).pop()
-            if hihat:
-                container = note_containers.get(hihat[1], NoteContainer())
-                container.add_note(hihat_note)
-                note_containers[hihat[1]] = container
+            for instr, beat in beats:
+                beat = (filter(lambda b: b[0] == i, beat) or [None]).pop()
+                if beat:
+                    container = note_containers.get(beat[1], NoteContainer())
+                    container.add_note(instr)
+                    note_containers[beat[1]] = container
 
             bar.bar.pop(bar.bar.index([i/16., 16, None]))
             for duration, container in note_containers.items():
