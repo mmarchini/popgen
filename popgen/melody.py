@@ -1,10 +1,14 @@
 
 from decimal import Decimal
+from operator import itemgetter
 
 from scipy.stats import rv_discrete
 
-from mingus.core import scales
+from mingus.core.value import dots
+from mingus.core import scales, progressions, chords
 from mingus.containers import Note, NoteContainer, Bar
+
+from popgen.harmony import determine
 
 HARMONIC_COMPILANCE = [
     [0.94, 0.30, 0.95, 0.16, 0.87, 0.26, 0.15],  # I
@@ -38,7 +42,7 @@ def notes_from_range(scale, a, b):
 
 class Melody(object):
 
-    def __init__(self, scale="C", truncate=0, power=1,
+    def __init__(self, scale="C", tempo=110, truncate=0, power=1,
                  preferred_range=("A-3", "A-4"), maximum_range=("F-2", "D-4"),
                  inner_drop_off=0.04, outer_drop_off=0.15):
         self.preferred_range = preferred_range
@@ -48,17 +52,22 @@ class Melody(object):
         self.truncate = truncate
         self.power = power
         self.scale = scale
+        self.tempo = tempo
         self.harmony = []
 
     def generate_melody(self, ):
         melody_bars = []
+        self.melody = []
+        self.last_note = None
         for chord in self.harmony:
+            self.current_chord = chord
+            self.melody.append([])
             melody_bar = Bar()
 
             possible_notes = notes_from_range(self.scale, *self.maximum_range)
             suggested_notes = []
             for note in possible_notes:
-                for beat in [1, 2, 4, 8, 16]:
+                for beat in [2, dots(4), 4, dots(8), 8, 16]:
                     suggested_notes.append((note, beat))
             suggested_indexes = map(
                 lambda v: suggested_notes.index(v),
@@ -67,22 +76,54 @@ class Melody(object):
 
             while not melody_bar.is_full():
                 probabilities = []
+                self.current_beat = melody_bar.current_beat
                 for note, beat in suggested_notes:
                     probabilities.append(self.calculate_score(note, beat))
 
                 total = Decimal(sum(probabilities))
-                normalize = lambda p: p/total
-                probabilities = map(normalize, probabilities)
+                if not total:
+                    note, beat = None, 1/(1-self.current_beat)
+                else:
+                    normalize = lambda p: p/total
+                    probabilities = map(normalize, probabilities)
 
-                values = [suggested_indexes, probabilities]
-                print len(suggested_notes), len(probabilities)
-                index = rv_discrete(values=values).rvs()
+                    values = [suggested_indexes, probabilities]
+                    index = rv_discrete(values=values).rvs()
 
-                note, beat = suggested_notes[index]
-                melody_bar.place_notes(NoteContainer(note), beat)
+                    note, beat = suggested_notes[index]
+                self.melody[-1].append((note, beat))
+                self.last_note = (note, beat)
+                note = note if note is None else NoteContainer(note)
+                melody_bar.place_notes(note, beat)
             melody_bars.append(melody_bar)
 
         return melody_bars
+
+    def get_note_chord_compilance(self, note, chord):
+        a = ['I', 'II', 'III', 'IV', 'V', 'VI']
+
+        key_chords = map(determine, progressions.to_chords(a, self.scale))
+        key_chords = map(itemgetter(0), key_chords)
+
+        p = HARMONIC_COMPILANCE[key_chords.index(chord)]
+
+        return p[scales.Major(self.scale).ascending().index(note.name)]
+
+    def get_interval(self, first_note, second_note):
+
+        possible_notes = notes_from_range(self.scale, *self.maximum_range)
+
+        first_note_pos = possible_notes.index(first_note)
+        second_note_pos = possible_notes.index(second_note)
+
+        return second_note_pos - first_note_pos
+
+    def is_pentatonic(self, note):
+        pentatonic = scales.PentatonicMajor(self.scale)
+
+        if note.name in pentatonic.ascending():
+            return True
+        return False
 
     def calculate_ambitus(self, note):
         ''' A regression towards the mean pitch is achieved by establishing an
@@ -96,7 +137,35 @@ class Melody(object):
         comfortable range for the singer in which most of the pitches should
         reside.'''
 
-        return 1
+        score = Decimal(1)
+
+        pref_notes = notes_from_range(self.scale, *self.preferred_range)
+        maximum_notes = notes_from_range(self.scale, *self.maximum_range)
+
+        lower = filter(lambda r: r < min(pref_notes), maximum_notes)
+        upper = filter(lambda r: r > min(pref_notes), maximum_notes)
+        if note in pref_notes:
+            if len(pref_notes) % 2 == 1:
+                median = len(pref_notes)/2
+            else:
+                m = pref_notes[(len(pref_notes)/2)-1]
+                n = pref_notes[len(pref_notes)/2]
+                if note <= m:
+                    median = pref_notes.index(m)
+                else:
+                    median = pref_notes.index(n)
+            offset = abs(median - pref_notes.index(note))
+            lowered_by = self.inner_drop_off * offset
+        elif note in lower:
+            lowered_by = (lower.index(note)+1) * self.outer_drop_off
+        elif note in upper:
+            lowered_by = (upper.index(note)+1) * self.outer_drop_off
+        else:
+            raise ValueError("Invalid note", note)
+
+        score *= Decimal(1-lowered_by)
+
+        return score
 
     def calculate_harmonic_compilance(self, note):
         ''' How  well  a  given  note harmonizes with the chord is an important
@@ -106,7 +175,8 @@ class Melody(object):
         the user as well.
         '''
 
-        return 1
+        compilance = self.get_note_chord_compilance(note, self.current_chord)
+        return Decimal(compilance)
 
     def calculate_intervals_n_harmonic_compilante(self, note):
         ''' The size of the interval between two notes has a close connection
@@ -131,9 +201,44 @@ class Melody(object):
             harmonic compliance.
         '''
 
-        return 1
+        score = 1
+        if self.last_note is None:
+            return score
+        last_note = self.last_note[0]
 
-    def calculate_note_length(self, note):
+        # Harmonic Compilance
+
+        # C = self.get_note_chord_compilance
+        interval = self.get_interval(last_note, note)
+        # last_note_compilance = C(self.last_note, self.last_chord)
+        # current_note_compilance = C(note, self.last_chord)
+
+        # TODO Unusual intervals??
+
+        # One pitch step
+        chord_notes = chords.from_shorthand(self.current_chord)
+        if interval >= 1:
+            if not (last_note.name in chord_notes or note.name in chord_notes):
+                score -= 0.15
+
+        # Two Pitch steps 1
+        is_last_pentatonic = self.is_pentatonic(last_note)
+        is_this_pentatonic = self.is_pentatonic(note)
+        if interval >= 2:
+            if not (last_note.name in chord_notes or note.name in chord_notes):
+                if is_last_pentatonic and is_this_pentatonic:
+                    score -= 0.1
+                else:
+                    score -= 0.2
+
+        # Two Pitch steps 2
+        if interval >= 2:
+            if not (is_last_pentatonic and is_this_pentatonic):
+                score -= 0.05
+
+        return Decimal(score)
+
+    def calculate_note_length(self, beat):
         ''' As a new note is suggested the previous note will get its length
         determined based on the onset of the new note. One part of the
         evaluation of the new note position is therefore an evaluation of the
@@ -150,7 +255,36 @@ class Melody(object):
         not allowed to have an even length.
         '''
 
-        return 1
+        if self.current_beat + (16./beat)/16. > 1.0:
+            return -1000
+        elif beat == 2:
+            score = 0.15 + (0.0075*(self.tempo-70))
+            if self.current_beat not in [i/16. for i in range(0, 16, 8)]:
+                return -1000
+        elif beat == dots(4):
+            score = 0.35 + (0.0085*(self.tempo-70))
+            if self.current_beat not in [i/16. for i in range(0, 12, 2)]:
+                return -1000
+        elif beat == 4:
+            score = 0.5 + (0.007*(self.tempo-70))
+            if self.current_beat not in [i/16. for i in range(0, 16, 4)]:
+                return -1000
+        elif beat == dots(8):
+            score = 0.151 - (0.002*(self.tempo-70))
+            if self.current_beat not in [i/16. for i in range(0, 14, 2)]:
+                return -1000
+        elif beat == 8:
+            score = 1.0 - abs(0.016*(self.tempo-100))
+            if self.current_beat not in [i/16. for i in range(0, 16, 2)]:
+                return -1000
+        elif beat == 16:
+            score = 0.65 - (0.014*(self.tempo-70))
+        else:
+            raise ValueError("Unexpected beat", beat)
+
+        if score < 0:
+            score = -1000
+        return Decimal(score)
 
     def calculate_note_length_n_harmonic_compilance(self, note):
         ''' The program tries to create melodies where longer notes in general
@@ -241,7 +375,7 @@ class Melody(object):
         score += self.calculate_intervals_n_harmonic_compilante(note)
 
         # 4. Note Length
-        score += self.calculate_note_length(note)
+        score += self.calculate_note_length(beat)
 
         # 5. Note Length & Harmonic Compilance
         score += self.calculate_note_length_n_harmonic_compilance(note)
@@ -260,5 +394,8 @@ class Melody(object):
 
         # 10. Good Continuation
         score += self.calculate_good_continuation(note)
+
+        if score < 0:
+            return 0
 
         return score
