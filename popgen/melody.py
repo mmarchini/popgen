@@ -1,4 +1,6 @@
 
+from math import copysign
+
 from decimal import Decimal
 from operator import itemgetter
 
@@ -33,6 +35,7 @@ def notes_from_range(scale, a, b):
         if next_note.name in valid_notes:
             notes.append(next_note)
         next_note = Note().from_int(int(next_note))
+        next_note.dynamics["velocity"] = 10
         next_note.augment()
         next_note = Note().from_int(int(next_note))
     notes.append(next_note)
@@ -365,7 +368,38 @@ class Melody(object):
         statistical foundation can be seen in Figure 8 (Elowsson, 2012).
         '''
 
-        return 1
+        same_direction = True
+        count = 0
+        direction = 0
+        last_note = note
+        for bar in reversed(self.melody):
+            for note, beat in reversed(bar):
+                if note is None:
+                    continue
+                current_direction = copysign(1, int(last_note) - int(note))
+                if note == last_note:
+                    last_note = note
+                    count += 1
+                elif direction == 0:
+                    direction = current_direction
+                    last_note = note
+                    count += 1
+                elif direction == current_direction:
+                    last_note = note
+                    count += 1
+                else:
+                    same_direction = False
+                    break
+            if not same_direction:
+                break
+
+        p = [1.6, 1.35, 1.19, 0.9, 0.75, 0.6, 0.5, 0.45, 0.41, 0.35]
+        if count > len(p):
+            return 0
+        elif direction == 0:
+            return Decimal(0.1)
+
+        return Decimal(p[count-1])
 
     def calculate_score(self, note, beat):
         score = 0
