@@ -58,7 +58,7 @@ class Melody(object):
     def generate_melody(self, ):
         melody_bars = []
         self.melody = []
-        self.last_note = None
+        self.last_note = (None, None)
         for chord in self.harmony:
             self.current_chord = chord
             self.melody.append([])
@@ -195,23 +195,27 @@ class Melody(object):
           * An interval of at least two pitch steps where one of the notes does
             not belong to the chord is awarded a lowered score. If both of the
             notes are pentatonic the lowering is small. If at least one of the
-            notes is non-pentatonic the lowering is bigger.
+            notes is non-pentatonic the lowering is bigger0.89, 0.24, 0.83.
           * An interval of at least two pitch steps where one of the notes is
             not pentatonic is awarded a slightly lower score, regardless of
             harmonic compliance.
         '''
 
         score = 1
-        if self.last_note is None:
-            return score
         last_note = self.last_note[0]
+        if last_note is None:
+            return score
 
         # Harmonic Compilance
 
-        # C = self.get_note_chord_compilance
+        C = self.get_note_chord_compilance
         interval = self.get_interval(last_note, note)
-        # last_note_compilance = C(self.last_note, self.last_chord)
-        # current_note_compilance = C(note, self.last_chord)
+        last_note_compilance = C(last_note, self.current_chord)
+        current_note_compilance = C(note, self.current_chord)
+        # As it is not clear how they calculate, let's try guessing
+        last_note_score = interval * (last_note_compilance - 0.5)
+        current_note_score = interval * (current_note_compilance - 0.5)
+        score += (last_note_score + current_note_score)/2.0
 
         # TODO Unusual intervals??
 
