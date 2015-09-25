@@ -181,6 +181,7 @@ class Melody(object):
         compilance = self.get_note_chord_compilance(note, self.current_chord)
         return Decimal(compilance)
 
+    # TODO calculate_intervals_n_harmonic_compilante review
     def calculate_intervals_n_harmonic_compilante(self, note):
         ''' The size of the interval between two notes has a close connection
         to harmony. For larger intervals the dependency on good harmonization
@@ -262,30 +263,24 @@ class Melody(object):
         not allowed to have an even length.
         '''
 
+        beat_range = lambda a, b, c: [i/16. for i in range(a, b, c)]
+
+        possible_beats = {
+            2: [0.15 + (0.0075*(self.tempo-70)), beat_range(0, 16, 8)],
+            dots(4): [0.35 + (0.0085*(self.tempo-70)), beat_range(0, 12, 2)],
+            4: [0.5 + (0.007*(self.tempo-70)), beat_range(0, 16, 4)],
+            dots(8): [0.151 - (0.002*(self.tempo-70)), beat_range(0, 14, 2)],
+            8: [abs(0.016*(self.tempo-100)), beat_range(0, 16, 2)],
+            16: [0.65 - (0.014*(self.tempo-70)), beat_range(0, 16, 1), None]
+        }
+        beat_ = possible_beats.get(beat, None)
+
         if self.current_beat + (16./beat)/16. > 1.0:
             return -1000
-        elif beat == 2:
-            score = 0.15 + (0.0075*(self.tempo-70))
-            if self.current_beat not in [i/16. for i in range(0, 16, 8)]:
+        elif beat_:
+            if beat_[1] and self.current_beat not in beat_[1]:
                 return -1000
-        elif beat == dots(4):
-            score = 0.35 + (0.0085*(self.tempo-70))
-            if self.current_beat not in [i/16. for i in range(0, 12, 2)]:
-                return -1000
-        elif beat == 4:
-            score = 0.5 + (0.007*(self.tempo-70))
-            if self.current_beat not in [i/16. for i in range(0, 16, 4)]:
-                return -1000
-        elif beat == dots(8):
-            score = 0.151 - (0.002*(self.tempo-70))
-            if self.current_beat not in [i/16. for i in range(0, 14, 2)]:
-                return -1000
-        elif beat == 8:
-            score = 1.0 - abs(0.016*(self.tempo-100))
-            if self.current_beat not in [i/16. for i in range(0, 16, 2)]:
-                return -1000
-        elif beat == 16:
-            score = 0.65 - (0.014*(self.tempo-70))
+            score = beat_[0]
         else:
             raise ValueError("Unexpected beat", beat)
 
@@ -293,6 +288,7 @@ class Melody(object):
             score = -1000
         return Decimal(score)
 
+    # TODO calculate_note_length_n_harmonic_compilance
     def calculate_note_length_n_harmonic_compilance(self, note):
         ''' The program tries to create melodies where longer notes in general
         have better harmonization than shorter notes. This means that longer
@@ -305,6 +301,7 @@ class Melody(object):
 
         return 1
 
+    # TODO calculate_note_length_n_interval_size
     def calculate_note_length_n_interval_size(self, note):
         ''' As can be seen in Figure 2, Section C there is a relationship
         between note length and interval size. This is implemented in the
@@ -315,6 +312,7 @@ class Melody(object):
 
         return 1
 
+    # TODO calculate_prase_arch
     def calculate_prase_arch(self, note):
         ''' Compliance with Huron's (2006) findings of convex phrase arches can
         be ensured if the user choses to.
@@ -322,6 +320,7 @@ class Melody(object):
 
         return 1
 
+    # TODO calculate_tonal_resolution
     def calculate_tonal_resolution(self, note):
         ''' At the end of the refrain the melody will resolve at a tonic. This
         may happen in the verse as well if there is a position where a dominant
@@ -334,6 +333,7 @@ class Melody(object):
 
         return 1
 
+    # TODO calculate_repetition
     def calculate_repetition(self, note):
         ''' Patterns in the melody repeat themselves over and over again both
         at a rhythmical level and concerning pitch intervals. As we have seen
