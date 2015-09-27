@@ -289,7 +289,7 @@ class Melody(object):
         return Decimal(score)
 
     # TODO calculate_note_length_n_harmonic_compilance
-    def calculate_note_length_n_harmonic_compilance(self, note):
+    def calculate_note_length_n_harmonic_compilance(self, note, beat):
         ''' The program tries to create melodies where longer notes in general
         have better harmonization than shorter notes. This means that longer
         notes with poor harmonization are awarded a lower score and that longer
@@ -298,8 +298,41 @@ class Melody(object):
         score and that shorter notes with poor harmonization are awarded a
         slightly higher score.
         '''
+        last_note, last_beat = self.last_note
+        if not last_note:
+            return 0
 
-        return 1
+        score = 1
+        C = self.get_note_chord_compilance
+        current_note_compilance = C(note, self.current_chord)
+
+        # Poor
+        if current_note_compilance < 0.5:
+            # Shorter with poor = slightly higher
+            # Longer with poor = lower
+            score = {
+                2: 0.1,
+                dots(4): 0.6,
+                4: 1,
+                dots(8): 1.1,
+                8: 1.18,
+                16: 1.25
+            }[beat]
+
+        # Good
+        else:
+            # Shorter with good = lower
+            # Longer with good = slightly higher
+            score = {
+                2: 1.25,
+                dots(4): 1.15,
+                4: 1,
+                dots(8): 0.7,
+                8: 0.37,
+                16: 0.1
+            }[beat]
+
+        return score
 
     # TODO calculate_note_length_n_interval_size
     def calculate_note_length_n_interval_size(self, note):
@@ -416,7 +449,7 @@ class Melody(object):
         score += self.calculate_note_length(beat)
 
         # 5. Note Length & Harmonic Compilance
-        score += self.calculate_note_length_n_harmonic_compilance(note)
+        score += self.calculate_note_length_n_harmonic_compilance(note, beat)
 
         # 6. Note Length & Interval Size
         score += self.calculate_note_length_n_interval_size(note)
