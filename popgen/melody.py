@@ -332,7 +332,7 @@ class Melody(object):
                 16: 0.1
             }[beat]
 
-        return score
+        return Decimal(score)
 
     # TODO calculate_note_length_n_interval_size
     def calculate_note_length_n_interval_size(self, note):
