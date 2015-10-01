@@ -56,51 +56,65 @@ class Melody(object):
         self.power = power
         self.scale = scale
         self.tempo = tempo
+        self.phrase_structure = []
         self.harmony = []
 
     def generate_melody(self, ):
         melody_bars = []
-        self.melody = []
-        self.last_note = (None, None)
-        for chord in self.harmony:
-            self.current_chord = chord
-            self.melody.append([])
-            melody_bar = Bar()
-
-            possible_notes = notes_from_range(self.scale, *self.maximum_range)
-            suggested_notes = []
-            for note in possible_notes:
-                for beat in [2, dots(4), 4, dots(8), 8, 16]:
-                    suggested_notes.append((note, beat))
-            suggested_indexes = map(
-                lambda v: suggested_notes.index(v),
-                suggested_notes
-            )
-
-            while not melody_bar.is_full():
-                probabilities = []
-                self.current_beat = melody_bar.current_beat
-                for note, beat in suggested_notes:
-                    probabilities.append(self.calculate_score(note, beat))
-
-                total = Decimal(sum(probabilities))
-                if not total:
-                    note, beat = None, 1/(1-self.current_beat)
-                else:
-                    normalize = lambda p: p/total
-                    probabilities = map(normalize, probabilities)
-
-                    values = [suggested_indexes, probabilities]
-                    index = rv_discrete(values=values).rvs()
-
-                    note, beat = suggested_notes[index]
-                self.melody[-1].append((note, beat))
-                self.last_note = (note, beat)
-                note = note if note is None else NoteContainer(note)
-                melody_bar.place_notes(note, beat)
-            melody_bars.append(melody_bar)
+        self._phrases = {}
+        for phrase, bars in self.phrase_structure:
+            melody_bars.extend(self._generate_phrase_bars(phrase, bars))
 
         return melody_bars
+
+    def _generate_phrase_bars(self, phrase, bars):
+        if phrase in self._phrases:
+            return self._phrases[phrase]
+        phrase_bars = []
+        self.melody = []
+        self.last_note = (None, None)
+        possible_notes = notes_from_range(self.scale, *self.maximum_range)
+        for bar in range(bars):
+            for chord in self.harmony:
+                self.current_chord = chord
+                self.melody.append([])
+                melody_bar = Bar()
+
+                suggested_notes = []
+                for note in possible_notes:
+                    for beat in [2, dots(4), 4, dots(8), 8, 16]:
+                        suggested_notes.append((note, beat))
+                suggested_indexes = map(
+                    lambda v: suggested_notes.index(v),
+                    suggested_notes
+                )
+
+                while not melody_bar.is_full():
+                    probabilities = []
+                    self.current_beat = melody_bar.current_beat
+                    for note, beat in suggested_notes:
+                        probabilities.append(self.calculate_score(note, beat))
+
+                    total = Decimal(sum(probabilities))
+                    if not total:
+                        note, beat = None, 1/(1-self.current_beat)
+                    else:
+                        normalize = lambda p: p/total
+                        probabilities = map(normalize, probabilities)
+
+                        values = [suggested_indexes, probabilities]
+                        index = rv_discrete(values=values).rvs()
+
+                        note, beat = suggested_notes[index]
+                    self.melody[-1].append((note, beat))
+                    self.last_note = (note, beat)
+                    note = note if note is None else NoteContainer(note)
+                    melody_bar.place_notes(note, beat)
+                phrase_bars.append(melody_bar)
+
+        self._phrases[phrase] = phrase_bars
+
+        return phrase_bars
 
     def get_note_chord_compilance(self, note, chord):
         a = ['I', 'II', 'III', 'IV', 'V', 'VI']
