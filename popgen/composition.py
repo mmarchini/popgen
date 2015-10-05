@@ -11,7 +11,7 @@ class Composition(object):
         self.drum_track = Track()
         self.drum_track.instrument = MidiPercussionInstrument()
 
-        chords_instrumnet = MidiInstrument(name='Electric Grand Piano')
+        chords_instrumnet = MidiInstrument(name='Eletric Guitar (jazz)')
         self.chords_track = Track()
         self.chords_track.instrument = chords_instrumnet
 
@@ -20,7 +20,7 @@ class Composition(object):
         self.bass_track.instrument = bass_instrument
 
         self.melody_track = Track()
-        self.melody_track.instrument = MidiInstrument(name='Synth Voice')
+        self.melody_track.instrument = MidiInstrument(name='Overdriven Guitar')
 
         self.bpm = tempo.define_tempo()
 
@@ -46,10 +46,10 @@ class Composition(object):
     def play(self):
         print fluidsynth.init("arachno.sf2", "alsa")
         fluidsynth.midi.is_general_midi = True
-        fluidsynth.main_volume(0, 70)
-        fluidsynth.main_volume(1, 75)
-        fluidsynth.main_volume(2, 200)
-        fluidsynth.main_volume(9, 75)
+        fluidsynth.main_volume(0, 95)
+        fluidsynth.main_volume(1, 95)
+        fluidsynth.main_volume(2, 100)
+        fluidsynth.main_volume(9, 95)
 
         fluidsynth.play_Tracks(
             [self.chords_track, self.bass_track, self.melody_track,

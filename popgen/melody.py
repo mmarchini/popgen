@@ -1,7 +1,7 @@
 
 from math import copysign
 
-from decimal import Decimal
+from cdecimal import Decimal
 from operator import itemgetter
 
 from scipy.stats import rv_discrete
@@ -21,6 +21,7 @@ HARMONIC_COMPILANCE = [
     [0.92, 0.28, 0.85, 0.03, 0.25, 0.91, 0.20],  # VI
 ]
 
+DYNAMICS = [10, 1, 3, 1, 6, 1, 3, 1, 8, 1, 3, 1, 6, 1, 3, 1]
 
 def notes_from_range(scale, a, b):
     a = Note(a)
@@ -62,6 +63,8 @@ class Melody(object):
     def generate_melody(self, ):
         melody_bars = []
         self._phrases = {}
+        self._pref_notes = notes_from_range(self.scale, *self.preferred_range)
+        self._max_notes = notes_from_range(self.scale, *self.maximum_range)
         for phrase, bars in self.phrase_structure:
             melody_bars.extend(self._generate_phrase_bars(phrase, bars))
 
@@ -73,7 +76,7 @@ class Melody(object):
         phrase_bars = []
         self.melody = []
         self.last_note = (None, None)
-        possible_notes = notes_from_range(self.scale, *self.maximum_range)
+        possible_notes = self._max_notes
         for bar in range(bars):
             for chord in self.harmony:
                 self.current_chord = chord
@@ -108,7 +111,10 @@ class Melody(object):
                         note, beat = suggested_notes[index]
                     self.melody[-1].append((note, beat))
                     self.last_note = (note, beat)
-                    note = note if note is None else NoteContainer(note)
+                    if note is not None:
+                        note.velocity = 60+DYNAMICS[int(16*self.current_beat)]
+                        note = NoteContainer(note)
+                    note = note
                     melody_bar.place_notes(note, beat)
                 phrase_bars.append(melody_bar)
 
@@ -117,18 +123,24 @@ class Melody(object):
         return phrase_bars
 
     def get_note_chord_compilance(self, note, chord):
-        a = ['I', 'II', 'III', 'IV', 'V', 'VI']
+        if not getattr(self, "_chord_compilance", None):
+            self._chord_compilance = {}
+        if not self._chord_compilance.get((note, chord)):
+            a = ['I', 'II', 'III', 'IV', 'V', 'VI']
 
-        key_chords = map(determine, progressions.to_chords(a, self.scale))
-        key_chords = map(itemgetter(0), key_chords)
+            key_chords = map(determine, progressions.to_chords(a, self.scale))
+            key_chords = map(itemgetter(0), key_chords)
 
-        p = HARMONIC_COMPILANCE[key_chords.index(chord)]
+            p = HARMONIC_COMPILANCE[key_chords.index(chord)]
+            comp = p[scales.Major(self.scale).ascending().index(note.name)]
 
-        return p[scales.Major(self.scale).ascending().index(note.name)]
+            self._chord_compilance[(note, chord)] = comp
+
+        return self._chord_compilance.get((note, chord))
 
     def get_interval(self, first_note, second_note):
 
-        possible_notes = notes_from_range(self.scale, *self.maximum_range)
+        possible_notes = self._max_notes
 
         first_note_pos = possible_notes.index(first_note)
         second_note_pos = possible_notes.index(second_note)
@@ -156,12 +168,16 @@ class Melody(object):
 
         score = Decimal(1)
 
-        pref_notes = notes_from_range(self.scale, *self.preferred_range)
-        maximum_notes = notes_from_range(self.scale, *self.maximum_range)
+        pref_notes = self._pref_notes
+        maximum_notes = self._max_notes
 
-        lower = filter(lambda r: r < min(pref_notes), maximum_notes)
-        upper = filter(lambda r: r > min(pref_notes), maximum_notes)
-        if note in pref_notes:
+        if not getattr(self, 'lower', None):
+            self.lower = filter(lambda r: r < min(pref_notes), maximum_notes)
+            self.lower_note = max(self.lower)
+        if not getattr(self, 'upper', None):
+            self.upper = filter(lambda r: r > min(pref_notes), maximum_notes)
+            self.upper_note = min(self.upper)
+        if self.lower_note < note < self.upper_note:
             if len(pref_notes) % 2 == 1:
                 median = len(pref_notes)/2
             else:
@@ -173,10 +189,10 @@ class Melody(object):
                     median = pref_notes.index(n)
             offset = abs(median - pref_notes.index(note))
             lowered_by = self.inner_drop_off * offset
-        elif note in lower:
-            lowered_by = (lower.index(note)+1) * self.outer_drop_off
-        elif note in upper:
-            lowered_by = (upper.index(note)+1) * self.outer_drop_off
+        elif note <= self.lower_note:
+            lowered_by = (self.lower.index(note)+1) * self.outer_drop_off
+        elif note >= self.upper_note:
+            lowered_by = (self.upper.index(note)+1) * self.outer_drop_off
         else:
             raise ValueError("Invalid note", note)
 
@@ -223,6 +239,10 @@ class Melody(object):
         last_note = self.last_note[0]
         if last_note is None:
             return score
+        if not getattr(self, '_intervals_n_harmonic_compilante', None):
+            self._intervals_n_harmonic_compilante = {}
+        if self._intervals_n_harmonic_compilante.get((last_note, note)):
+            return self._intervals_n_harmonic_compilante[(last_note, note)]
 
         # Harmonic Compilance
 
@@ -258,7 +278,9 @@ class Melody(object):
             if not (is_last_pentatonic and is_this_pentatonic):
                 score -= 0.05
 
-        return Decimal(score)
+        score = Decimal(score)
+        self._intervals_n_harmonic_compilante[(last_note, note)] = score
+        return score
 
     def calculate_note_length(self, beat):
         ''' As a new note is suggested the previous note will get its length
