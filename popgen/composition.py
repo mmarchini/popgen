@@ -1,4 +1,4 @@
-from mingus.midi import fluidsynth
+from mingus.midi.fluidsynth import FluidSynthSequencer
 from mingus.containers import Track, MidiInstrument
 from mingus.containers.instrument import MidiPercussionInstrument
 
@@ -43,9 +43,15 @@ class Composition(object):
             self.melody_track.add_bar(melody_bars[i])
             self.drum_track.add_bar(drum_bar)
 
-    def play(self):
-        print fluidsynth.init("arachno.sf2", "alsa")
-        fluidsynth.midi.is_general_midi = True
+    def play(self, filename=None):
+        fluidsynth = FluidSynthSequencer()
+        if filename is not None:
+            fluidsynth.start_recording(filename)
+        else:
+            fluidsynth.start_audio_output("alsa")
+        fluidsynth.load_sound_font("arachno.sf2")
+        fluidsynth.fs.program_reset()
+        fluidsynth.is_general_midi = True
         fluidsynth.main_volume(0, 95)
         fluidsynth.main_volume(1, 95)
         fluidsynth.main_volume(2, 100)
@@ -57,3 +63,4 @@ class Composition(object):
             [0, 1, 2, 9],
             self.bpm
         )
+
