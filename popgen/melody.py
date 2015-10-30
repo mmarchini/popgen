@@ -112,7 +112,7 @@ class Melody(object):
                     self.melody[-1].append((note, beat))
                     self.last_note = (note, beat)
                     if note is not None:
-                        note.velocity = 60+DYNAMICS[int(16*self.current_beat)]
+                        note.velocity = 117+DYNAMICS[int(16*self.current_beat)]
                         note = NoteContainer(note)
                     note = note
                     melody_bar.place_notes(note, beat)

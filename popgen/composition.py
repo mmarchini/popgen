@@ -52,10 +52,10 @@ class Composition(object):
         fluidsynth.load_sound_font("arachno.sf2")
         fluidsynth.fs.program_reset()
         fluidsynth.is_general_midi = True
-        fluidsynth.main_volume(0, 95)
-        fluidsynth.main_volume(1, 95)
-        fluidsynth.main_volume(2, 100)
-        fluidsynth.main_volume(9, 95)
+        fluidsynth.main_volume(0, 110)
+        fluidsynth.main_volume(1, 110)
+        fluidsynth.main_volume(2, 127)
+        fluidsynth.main_volume(9, 110)
 
         fluidsynth.play_Tracks(
             [self.chords_track, self.bass_track, self.melody_track,
@@ -63,4 +63,3 @@ class Composition(object):
             [0, 1, 2, 9],
             self.bpm
         )
-
