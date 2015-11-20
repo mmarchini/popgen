@@ -2,10 +2,20 @@ from mingus.midi.fluidsynth import FluidSynthSequencer
 from mingus.containers import Track, MidiInstrument
 from mingus.containers.instrument import MidiPercussionInstrument
 
-from popgen import rhythm, harmony, tempo, melody, phrase_structure
+from popgen import (rhythm as rhythm_, harmony as harmony_, tempo as tempo_,
+                    melody as melody_, phrase_structure as phrase_structure_)
 
 
 class Composition(object):
+
+    def __init__(self, bpm=None, rhythm=None, harmony=None, melody=None,
+                 phrase_structure=None):
+        self.bpm = bpm or tempo_.define_tempo()
+        self.rhythm = rhythm or rhythm_.Rhythm(self.bpm)
+        self.harmony = harmony or harmony_.Harmony()
+        self.melody = melody or melody_.Melody()
+        self.phrase_structure = phrase_structure or \
+            phrase_structure_.PhraseStructure()
 
     def compose(self):
         self.drum_track = Track()
@@ -22,20 +32,15 @@ class Composition(object):
         self.melody_track = Track()
         self.melody_track.instrument = MidiInstrument(name='Overdriven Guitar')
 
-        self.bpm = tempo.define_tempo()
+        drum_bar = self.rhythm.generate_bar()
 
-        rhythm_ = rhythm.Rhythm(self.bpm)
-        drum_bar = rhythm_.generate_bar()
+        chords = self.harmony.generate_chords()
+        chord_bars = self.harmony.generate_chord_bar(chords, drum_bar)
+        bass_bars = self.harmony.generate_bass_bar(chords, drum_bar)
 
-        harmony_ = harmony.Harmony()
-        chords = harmony_.generate_chords()
-        chord_bars = harmony_.generate_chord_bar(chords, drum_bar)
-        bass_bars = harmony_.generate_bass_bar(chords, drum_bar)
-
-        melody_ = melody.Melody(tempo=self.bpm)
-        melody_.harmony = chords
-        melody_.phrase_structure = phrase_structure.PhraseStructure()
-        melody_bars = melody_.generate_melody()
+        self.melody.harmony = chords
+        self.melody.phrase_structure = self.phrase_structure
+        melody_bars = self.melody.generate_melody()
 
         for i, chord_bar in enumerate(melody_bars):
             self.chords_track.add_bar(chord_bars[i % len(chord_bars)])

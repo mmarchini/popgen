@@ -23,6 +23,7 @@ HARMONIC_COMPILANCE = [
 
 DYNAMICS = [10, 1, 3, 1, 6, 1, 3, 1, 8, 1, 3, 1, 6, 1, 3, 1]
 
+
 def notes_from_range(scale, a, b):
     a = Note(a)
     b = Note(b)
@@ -46,14 +47,13 @@ def notes_from_range(scale, a, b):
 
 class Melody(object):
 
-    def __init__(self, scale="C", tempo=110, truncate=0, power=1,
+    def __init__(self, scale="C", tempo=110, power=1,
                  preferred_range=("A-3", "A-4"), maximum_range=("F-2", "D-4"),
                  inner_drop_off=0.04, outer_drop_off=0.15):
         self.preferred_range = preferred_range
         self.maximum_range = maximum_range
         self.inner_drop_off = inner_drop_off
         self.outer_drop_off = outer_drop_off
-        self.truncate = truncate
         self.power = power
         self.scale = scale
         self.tempo = tempo
