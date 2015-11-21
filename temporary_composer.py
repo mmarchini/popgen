@@ -3,10 +3,10 @@ from popgen import composition
 
 i = 0
 while i < 1:
-    c = composition.Composition()
+    c = composition.Composer()
     c.compose()
     a = "output/%d.wav" % i
-    print "Trying #%d"%i
+    print "Trying #%d" % i
     print a
-    c.play()
+    c.save(a)
     i += 1

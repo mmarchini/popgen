@@ -1,12 +1,13 @@
-from mingus.midi.fluidsynth import FluidSynthSequencer
-from mingus.containers import Track, MidiInstrument
-from mingus.containers.instrument import MidiPercussionInstrument
+
+from mingus.midi.midi_file_out import write_Composition
+from mingus.containers import Track, MidiInstrument, Composition
+# from mingus.containers.instrument import MidiPercussionInstrument
 
 from popgen import (rhythm as rhythm_, harmony as harmony_, tempo as tempo_,
                     melody as melody_, phrase_structure as phrase_structure_)
 
 
-class Composition(object):
+class Composer(object):
 
     def __init__(self, bpm=None, rhythm=None, harmony=None, melody=None,
                  phrase_structure=None):
@@ -19,18 +20,29 @@ class Composition(object):
 
     def compose(self):
         self.drum_track = Track()
-        self.drum_track.instrument = MidiPercussionInstrument()
+        self.drum_track.channel = 9
+        self.drum_track.instrument = MidiInstrument()
 
-        chords_instrumnet = MidiInstrument(name='Eletric Guitar (jazz)')
+        chords_instrumnet = MidiInstrument(name='Electric Guitar (jazz)')
+        instr_nr = MidiInstrument.names.index(chords_instrumnet.name) + 1
+        chords_instrumnet.instrument_nr = instr_nr
         self.chords_track = Track()
+        self.chords_track.channel = 1
         self.chords_track.instrument = chords_instrumnet
 
         bass_instrument = MidiInstrument(name='Electric Bass (finger)')
+        instr_nr = MidiInstrument.names.index(bass_instrument.name) + 1
+        bass_instrument.instrument_nr = instr_nr
         self.bass_track = Track()
+        self.bass_track.channel = 2
         self.bass_track.instrument = bass_instrument
 
+        melody_instrument = MidiInstrument(name='Overdriven Guitar')
+        instr_nr = MidiInstrument.names.index(melody_instrument.name) + 1
+        melody_instrument.instrument_nr = instr_nr
         self.melody_track = Track()
-        self.melody_track.instrument = MidiInstrument(name='Overdriven Guitar')
+        self.melody_track.channel = 0
+        self.melody_track.instrument = melody_instrument
 
         drum_bar = self.rhythm.generate_bar()
 
@@ -48,23 +60,11 @@ class Composition(object):
             self.melody_track.add_bar(melody_bars[i])
             self.drum_track.add_bar(drum_bar)
 
-    def play(self, filename=None):
-        fluidsynth = FluidSynthSequencer()
-        if filename is not None:
-            fluidsynth.start_recording(filename)
-        else:
-            fluidsynth.start_audio_output("alsa")
-        fluidsynth.load_sound_font("arachno.sf2")
-        fluidsynth.fs.program_reset()
-        fluidsynth.is_general_midi = True
-        fluidsynth.main_volume(0, 110)
-        fluidsynth.main_volume(1, 110)
-        fluidsynth.main_volume(2, 127)
-        fluidsynth.main_volume(9, 110)
-
-        fluidsynth.play_Tracks(
-            [self.chords_track, self.bass_track, self.melody_track,
-             self.drum_track],
-            [0, 1, 2, 9],
-            self.bpm
-        )
+    def save(self, filename):
+        composition = Composition()
+        composition.add_track(self.drum_track)
+        composition.add_track(self.chords_track)
+        composition.add_track(self.bass_track)
+        composition.add_track(self.melody_track)
+        # composition.
+        write_Composition(filename, composition, self.bpm)
