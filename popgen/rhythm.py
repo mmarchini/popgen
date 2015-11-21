@@ -3,6 +3,7 @@
 
 import random
 from operator import itemgetter
+
 from scipy.stats import rv_discrete
 
 from mingus.containers import instrument
