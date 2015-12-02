@@ -9,6 +9,12 @@ from popgen import (rhythm as rhythm_, harmony as harmony_, tempo as tempo_,
 
 class Composer(object):
 
+    _instruments = {
+        'melody': 'Overdriven Guitar',
+        'chord': 'Electric Guitar (jazz)',
+        'bass': 'Electric Bass (finger)',
+    }
+
     def __init__(self, bpm=None, rhythm=None, harmony=None, melody=None,
                  phrase_structure=None):
         self.bpm = bpm or tempo_.define_tempo()
@@ -18,26 +24,31 @@ class Composer(object):
         self.phrase_structure = phrase_structure or \
             phrase_structure_.PhraseStructure()
 
+    def instrument(self, name, instrument=None):
+        if instrument:
+            self._instruments[name] = instrument
+        return self._instruments[name]
+
     def compose(self):
         self.drum_track = Track()
         self.drum_track.channel = 9
         self.drum_track.instrument = MidiInstrument()
 
-        chords_instrumnet = MidiInstrument(name='Electric Guitar (jazz)')
+        chords_instrumnet = MidiInstrument(name=self.instrument('chord'))
         instr_nr = MidiInstrument.names.index(chords_instrumnet.name) + 1
         chords_instrumnet.instrument_nr = instr_nr
         self.chords_track = Track()
         self.chords_track.channel = 1
         self.chords_track.instrument = chords_instrumnet
 
-        bass_instrument = MidiInstrument(name='Electric Bass (finger)')
+        bass_instrument = MidiInstrument(name=self.instrument('bass'))
         instr_nr = MidiInstrument.names.index(bass_instrument.name) + 1
         bass_instrument.instrument_nr = instr_nr
         self.bass_track = Track()
         self.bass_track.channel = 2
         self.bass_track.instrument = bass_instrument
 
-        melody_instrument = MidiInstrument(name='Overdriven Guitar')
+        melody_instrument = MidiInstrument(name=self.instrument('melody'))
         instr_nr = MidiInstrument.names.index(melody_instrument.name) + 1
         melody_instrument.instrument_nr = instr_nr
         self.melody_track = Track()
