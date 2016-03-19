@@ -36,7 +36,7 @@ class Harmony(object):
             probabilities = self.markov_chain[self.key.index(harmony[-1])]
 
             prob_sum = D(sum(probabilities))
-            normalized = [prob/prob_sum for prob in probabilities]
+            normalized = [prob / prob_sum for prob in probabilities]
 
             note = self.key[rv_discrete(values=(range(6), normalized)).rvs()]
             harmony.append(note)
@@ -57,7 +57,7 @@ class Harmony(object):
             if beat < current_beat:
                 continue
             kicks.append([beat, n[0], n[1]])
-            current_beat += 1/n[0]
+            current_beat += 1 / n[0]
         return kicks
 
     def generate_chord_bar(self, chords_, rhythm_bar):

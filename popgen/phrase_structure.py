@@ -1,4 +1,10 @@
 
+""" Ideas:
+* Structure attributes that could affect melody and rhythm generation, as
+  well as harmony chords
+*
+"""
+
 
 class PhraseStructure(object):
 

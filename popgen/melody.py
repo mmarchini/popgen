@@ -7,10 +7,11 @@ from operator import itemgetter
 from scipy.stats import rv_discrete
 
 from mingus.core.value import dots
-from mingus.core import scales, progressions, chords
-from mingus.containers import Note, NoteContainer, Bar
+from mingus.core import progressions, chords
+from mingus.containers import NoteContainer, Bar
 
 from popgen.harmony import determine
+from popgen.utils import notes_from_range, get_scale
 
 HARMONIC_COMPILANCE = [
     [0.94, 0.30, 0.95, 0.16, 0.87, 0.26, 0.15],  # I
@@ -24,32 +25,12 @@ HARMONIC_COMPILANCE = [
 DYNAMICS = [10, 1, 3, 1, 6, 1, 3, 1, 8, 1, 3, 1, 6, 1, 3, 1]
 
 
-def notes_from_range(scale, a, b):
-    a = Note(a)
-    b = Note(b)
-    valid_notes = scales.Major(scale).ascending()[:-1]
-    if not (a.name in valid_notes and b.name in valid_notes):
-        raise ValueError("Invalid notes")
-
-    next_note = a
-    notes = []
-    while next_note != b:
-        if next_note.name in valid_notes:
-            notes.append(next_note)
-        next_note = Note().from_int(int(next_note))
-        next_note.dynamics["velocity"] = 10
-        next_note.augment()
-        next_note = Note().from_int(int(next_note))
-    notes.append(next_note)
-
-    return notes
-
-
 class Melody(object):
 
     def __init__(self, scale="C", tempo=110, power=1,
                  preferred_range=("A-3", "A-4"), maximum_range=("F-2", "D-4"),
-                 inner_drop_off=0.04, outer_drop_off=0.15):
+                 inner_drop_off=0.04, outer_drop_off=0.15,
+                 harmonic_compilance=HARMONIC_COMPILANCE, dynamics=DYNAMICS):
         self.preferred_range = preferred_range
         self.maximum_range = maximum_range
         self.inner_drop_off = inner_drop_off
@@ -57,6 +38,8 @@ class Melody(object):
         self.power = power
         self.scale = scale
         self.tempo = tempo
+        self.harmonic_compilance = harmonic_compilance
+        self.dynamics = dynamics
         self.phrase_structure = []
         self.harmony = []
 
@@ -100,9 +83,9 @@ class Melody(object):
 
                     total = Decimal(sum(probabilities))
                     if not total:
-                        note, beat = None, 1/(1-self.current_beat)
+                        note, beat = None, 1 / (1 - self.current_beat)
                     else:
-                        normalize = lambda p: p/total
+                        normalize = lambda p: p / total
                         probabilities = map(normalize, probabilities)
 
                         values = [suggested_indexes, probabilities]
@@ -112,7 +95,8 @@ class Melody(object):
                     self.melody[-1].append((note, beat))
                     self.last_note = (note, beat)
                     if note is not None:
-                        note.velocity = 117+DYNAMICS[int(16*self.current_beat)]
+                        cbeat = int(16 * self.current_beat)
+                        note.velocity = 117 + self.dynamics[cbeat]
                         note = NoteContainer(note)
                     note = note
                     melody_bar.place_notes(note, beat)
@@ -131,8 +115,9 @@ class Melody(object):
             key_chords = map(determine, progressions.to_chords(a, self.scale))
             key_chords = map(itemgetter(0), key_chords)
 
-            p = HARMONIC_COMPILANCE[key_chords.index(chord)]
-            comp = p[scales.Major(self.scale).ascending().index(note.name)]
+            p = self.harmonic_compilance[key_chords.index(chord)]
+            comp = p[get_scale(self.scale).ascending()
+                     .index(note.name)]
 
             self._chord_compilance[(note, chord)] = comp
 
@@ -148,7 +133,7 @@ class Melody(object):
         return second_note_pos - first_note_pos
 
     def is_pentatonic(self, note):
-        pentatonic = scales.PentatonicMajor(self.scale)
+        pentatonic = get_scale(self.scale)
 
         if note.name in pentatonic.ascending():
             return True
@@ -179,10 +164,10 @@ class Melody(object):
             self.upper_note = min(self.upper)
         if self.lower_note < note < self.upper_note:
             if len(pref_notes) % 2 == 1:
-                median = len(pref_notes)/2
+                median = len(pref_notes) / 2
             else:
-                m = pref_notes[(len(pref_notes)/2)-1]
-                n = pref_notes[len(pref_notes)/2]
+                m = pref_notes[(len(pref_notes) / 2) - 1]
+                n = pref_notes[len(pref_notes) / 2]
                 if note <= m:
                     median = pref_notes.index(m)
                 else:
@@ -190,13 +175,13 @@ class Melody(object):
             offset = abs(median - pref_notes.index(note))
             lowered_by = self.inner_drop_off * offset
         elif note <= self.lower_note:
-            lowered_by = (self.lower.index(note)+1) * self.outer_drop_off
+            lowered_by = (self.lower.index(note) + 1) * self.outer_drop_off
         elif note >= self.upper_note:
-            lowered_by = (self.upper.index(note)+1) * self.outer_drop_off
+            lowered_by = (self.upper.index(note) + 1) * self.outer_drop_off
         else:
             raise ValueError("Invalid note", note)
 
-        score *= Decimal(1-lowered_by)
+        score *= Decimal(1 - lowered_by)
 
         return score
 
@@ -253,7 +238,7 @@ class Melody(object):
         # As it is not clear how they calculate, let's try guessing
         last_note_score = interval * (last_note_compilance - 0.5)
         current_note_score = interval * (current_note_compilance - 0.5)
-        score += (last_note_score + current_note_score)/2.0
+        score += (last_note_score + current_note_score) / 2.0
 
         # TODO Unusual intervals??
 
@@ -299,19 +284,22 @@ class Melody(object):
         not allowed to have an even length.
         '''
 
-        beat_range = lambda a, b, c: [i/16. for i in range(a, b, c)]
+        beat_range = lambda a, b, c: [i / 16. for i in range(a, b, c)]
 
         possible_beats = {
-            2: [0.15 + (0.0075*(self.tempo-70)), beat_range(0, 16, 8)],
-            dots(4): [0.35 + (0.0085*(self.tempo-70)), beat_range(0, 12, 2)],
-            4: [0.5 + (0.007*(self.tempo-70)), beat_range(0, 16, 4)],
-            dots(8): [0.151 - (0.002*(self.tempo-70)), beat_range(0, 14, 2)],
-            8: [abs(0.016*(self.tempo-100)), beat_range(0, 16, 2)],
-            16: [0.65 - (0.014*(self.tempo-70)), beat_range(0, 16, 1), None]
+            2: [0.15 + (0.0075 * (self.tempo - 70)), beat_range(0, 16, 8)],
+            dots(4): [
+                0.35 + (0.0085 * (self.tempo - 70)), beat_range(0, 12, 2)],
+            4: [0.5 + (0.007 * (self.tempo - 70)), beat_range(0, 16, 4)],
+            dots(8): [
+                0.151 - (0.002 * (self.tempo - 70)), beat_range(0, 14, 2)],
+            8: [abs(0.016 * (self.tempo - 100)), beat_range(0, 16, 2)],
+            16: [
+                0.65 - (0.014 * (self.tempo - 70)), beat_range(0, 16, 1), None]
         }
         beat_ = possible_beats.get(beat, None)
 
-        if self.current_beat + (16./beat)/16. > 1.0:
+        if self.current_beat + (16. / beat) / 16. > 1.0:
             return -1000
         elif beat_:
             if beat_[1] and self.current_beat not in beat_[1]:
@@ -468,7 +456,7 @@ class Melody(object):
         elif direction == 0:
             return Decimal(0.1)
 
-        return Decimal(p[count-1])
+        return Decimal(p[count - 1])
 
     def calculate_score(self, note, beat):
         score = 0

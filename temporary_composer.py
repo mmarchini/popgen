@@ -1,12 +1,19 @@
 
+import subprocess
+
+from ministrel import utils
+
 from popgen import composition
 
-i = 0
-while i < 1:
-    c = composition.Composer()
-    c.compose()
-    a = "output/%d.wav" % i
-    print "Trying #%d" % i
-    print a
-    c.save(a)
-    i += 1
+composer = composition.Composer.from_yaml('tests.yaml')
+
+print("Composing...")
+composer.compose()
+
+print("Saving file...")
+midi_file = '/tmp/teste.midi'
+wave_file = '/tmp/teste.wav'
+composer.save(midi_file)
+print("Opening song...")
+utils.play(midi_file, 'arachno.sf2', wave_file)
+subprocess.call(['aplay', wave_file])

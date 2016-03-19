@@ -1,28 +1,66 @@
 
+import yaml
 from mingus.midi.midi_file_out import write_Composition
 from mingus.containers import Track, MidiInstrument, Composition
 # from mingus.containers.instrument import MidiPercussionInstrument
 
-from popgen import (rhythm as rhythm_, harmony as harmony_, tempo as tempo_,
-                    melody as melody_, phrase_structure as phrase_structure_)
+from popgen.utils import recursive_update_dict
+from popgen.utils import calc_preferred_range, calc_maximum_range
+from popgen.rhythm import Rhythm
+from popgen.harmony import Harmony, DEFAULT_MARKOV_CHAIN
+from popgen.tempo import define_tempo
+from popgen.melody import Melody, DYNAMICS, HARMONIC_COMPILANCE
+from popgen.phrase_structure import PhraseStructure
+
+# from popgen import (rhythm as rhythm_, harmony as harmony_, tempo as tempo_,
+#                     melody as melody_, phrase_structure as phrase_structure_)
+
+DEFAULT_INSTRUMENTS = {
+    'melody': 'Overdriven Guitar',
+    'chord': 'Electric Guitar (jazz)',
+    'bass': 'Electric Bass (finger)',
+}
+
+DEFAULT_PARAMETERS = {
+    'harmony': {
+        'markov_chain': DEFAULT_MARKOV_CHAIN
+    },
+    'instruments': DEFAULT_INSTRUMENTS,
+    'key': 'C',
+    'melody': {
+        'dynamics': DYNAMICS,
+        'harmonic_compilance': HARMONIC_COMPILANCE,
+        'power': 1,
+        'preferred_range': {
+            'center': 4,
+            'lower_offset': 2,
+            'upper_offset': 5
+        },
+        'maximum_range': {
+            'lower_offset': 1,
+            'upper_offset': 3
+        },
+        'inner_drop_off': 0.04,
+        'outer_drop_off': 0.15,
+    },
+    'tempo': {
+        'lower': 60, 'upper': 160
+    }
+}
 
 
 class Composer(object):
 
-    _instruments = {
-        'melody': 'Overdriven Guitar',
-        'chord': 'Electric Guitar (jazz)',
-        'bass': 'Electric Bass (finger)',
-    }
-
     def __init__(self, bpm=None, rhythm=None, harmony=None, melody=None,
-                 phrase_structure=None):
-        self.bpm = bpm or tempo_.define_tempo()
-        self.rhythm = rhythm or rhythm_.Rhythm(self.bpm)
-        self.harmony = harmony or harmony_.Harmony()
-        self.melody = melody or melody_.Melody()
+                 phrase_structure=None, instruments={}):
+        self.bpm = bpm or define_tempo()
+        self.rhythm = rhythm or Rhythm(self.bpm)
+        self.harmony = harmony or Harmony()
+        self.melody = melody or Melody()
         self.phrase_structure = phrase_structure or \
-            phrase_structure_.PhraseStructure()
+            PhraseStructure()
+        self._instruments = DEFAULT_INSTRUMENTS.copy()
+        self._instruments.update(instruments)
 
     def instrument(self, name, instrument=None):
         if instrument:
@@ -65,10 +103,10 @@ class Composer(object):
         self.melody.phrase_structure = self.phrase_structure
         melody_bars = self.melody.generate_melody()
 
-        for i, chord_bar in enumerate(melody_bars):
+        for i, melody_bar in enumerate(melody_bars):
             self.chords_track.add_bar(chord_bars[i % len(chord_bars)])
             self.bass_track.add_bar(bass_bars[i % len(bass_bars)])
-            self.melody_track.add_bar(melody_bars[i])
+            self.melody_track.add_bar(melody_bar)
             self.drum_track.add_bar(drum_bar)
 
     def save(self, filename):
@@ -77,5 +115,56 @@ class Composer(object):
         composition.add_track(self.chords_track)
         composition.add_track(self.bass_track)
         composition.add_track(self.melody_track)
-        # composition.
         write_Composition(filename, composition, self.bpm)
+
+    @classmethod
+    def from_yaml(cls, filename):
+        """
+        :param filename: Path to YAML file with parameters.
+        """
+        params = DEFAULT_PARAMETERS.copy()
+        with open(filename) as file_:
+            recursive_update_dict(params, yaml.load(file_))
+
+        tempo = params['tempo']
+        tempo = define_tempo(tempo['lower'], tempo['upper'])
+        tempo = params['tempo'].get('fixed', tempo)
+
+        key = params.get('key')
+
+        rhythm = Rhythm(tempo)
+
+        harmony = Harmony(
+            key=key,
+            markov_chain=params['harmony']['markov_chain']
+        )
+
+        melody = params['melody']
+        center = melody['preferred_range']['center']
+        lower = melody['preferred_range']['lower_offset']
+        upper = melody['preferred_range']['upper_offset']
+        preferred_range = calc_preferred_range(key, center, lower, upper)
+        lower = melody['maximum_range']['lower_offset']
+        upper = melody['maximum_range']['upper_offset']
+        maximum_range = calc_maximum_range(key, preferred_range, lower, upper)
+        melody = Melody(
+            scale=key,
+            tempo=tempo,
+            power=melody['power'],
+            preferred_range=preferred_range,
+            maximum_range=maximum_range,
+            inner_drop_off=melody['inner_drop_off'],
+            outer_drop_off=melody['outer_drop_off']
+        )
+
+        phrase_structure = PhraseStructure()
+
+        composer = cls(
+            rhythm=rhythm,
+            harmony=harmony,
+            melody=melody,
+            phrase_structure=phrase_structure,
+            instruments=params['instruments']
+        )
+
+        return composer

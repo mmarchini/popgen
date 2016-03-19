@@ -24,15 +24,15 @@ from mingus.containers import Bar, NoteContainer
 # ]
 
 POSITION_WEIGHT = [
-    (1,  10),
-    (2,  1),
-    (3,  3),
-    (4,  1),
-    (5,  6),
-    (6,  1),
-    (7,  3),
-    (8,  1),
-    (9,  8),
+    (1, 10),
+    (2, 1),
+    (3, 3),
+    (4, 1),
+    (5, 6),
+    (6, 1),
+    (7, 3),
+    (8, 1),
+    (9, 8),
     (10, 1),
     (11, 3),
     (12, 1),
@@ -50,7 +50,7 @@ class Rhythm(object):
         self.drum = instrument.MidiPercussionInstrument()
 
     def number_of_kicks(self):
-        kicks_mean = 1.+((abs((self.tempo-160.)/40.)))
+        kicks_mean = 1. + ((abs((self.tempo - 160.) / 40.)))
         kicks = int(round(random.gauss(kicks_mean, .45)))
 
         return kicks
@@ -60,13 +60,13 @@ class Rhythm(object):
         kicks = [
             (0, R())
         ]
-        for i in range(self.number_of_kicks()-1):
+        for i in range(self.number_of_kicks() - 1):
             duration = R()
-            q = 16/duration
+            q = 16 / duration
 
             p = []
             for i in range(0, 16, q):
-                if not any([i <= kick[0] < i+q for kick in kicks]):
+                if not any([i <= kick[0] < i + q for kick in kicks]):
                     p.append(i)
 
             kicks.append((random.choice(p), duration))
@@ -78,11 +78,11 @@ class Rhythm(object):
         snares = []
         for i in range(R(((1, 2, 3, 4, 0), (0.2, 0.4, 0.3, 0.09, 0.01)))):
             duration = R([(4, 8, 16), (0.5, 0.3, 0.2)])
-            q = 16/duration
+            q = 16 / duration
 
             p = []
             for i in range(0, 16, q):
-                if not any([i <= snare[0] < i+q for snare in snares]):
+                if not any([i <= snare[0] < i + q for snare in snares]):
                     p.append(i)
 
             snares.append((random.choice(p), duration))
@@ -94,11 +94,11 @@ class Rhythm(object):
         hihats = []
         for i in range(R(((1, 2, 3, 4, 0), (0.2, 0.4, 0.3, 0.09, 0.01)))):
             duration = R([(4, 8, 16), (0.5, 0.3, 0.2)])
-            q = 16/duration
+            q = 16 / duration
 
             p = []
             for i in range(0, 16, q):
-                if not any([i <= ride[0] < i+q for ride in hihats]):
+                if not any([i <= ride[0] < i + q for ride in hihats]):
                     p.append(i)
 
             hihats.append((random.choice(p), duration))
@@ -110,11 +110,11 @@ class Rhythm(object):
         rides = []
         for i in range(R(((1, 2, 3, 4, 0), (0.2, 0.4, 0.3, 0.09, 0.01)))):
             duration = R([(4, 8), (0.60, 0.40)])
-            q = 16/duration
+            q = 16 / duration
 
             p = []
             for i in range(0, 16, q):
-                if not any([i <= ride[0] < i+q for ride in rides]):
+                if not any([i <= ride[0] < i + q for ride in rides]):
                     p.append(i)
 
             rides.append((random.choice(p), duration))
@@ -138,17 +138,14 @@ class Rhythm(object):
             bar.place_notes(None, 16)
 
         for i in sorted(p):
-            note_containers = dict()
+            container = NoteContainer()
             for instr, beat in beats:
                 beat = (filter(lambda b: b[0] == i, beat) or [None]).pop()
                 if beat:
-                    container = note_containers.get(beat[1], NoteContainer())
                     container.add_note(instr)
-                    note_containers[beat[1]] = container
 
-            bar.bar.pop(bar.bar.index([i/16., 16, None]))
-            for duration, container in note_containers.items():
-                bar.bar.append([i/16., duration, container])
+            bar.bar.pop(bar.bar.index([i / 16., 16, None]))
+            bar.bar.append([i / 16., 16, container])
         bar.bar = sorted(bar.bar, key=itemgetter(0))
         bar.current_beat = 1.0
 
