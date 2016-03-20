@@ -45,19 +45,14 @@ class Harmony(object):
 
     def get_kicks(self, rhythm_bar):
         kicks = []
-        a = dict()
-        for beat in rhythm_bar.bar:
-            if beat[2] is None:
-                a[beat[0]] = [beat[1], None]
-            elif a.get(beat[0], [32])[0] > beat[1]:
-                a[beat[0]] = [beat[1], beat[2]]
+        last_beat = 0.
+        for beat in filter(lambda b: b[2] is not None, rhythm_bar.bar)[1:]:
+            duration = 1. / (beat[0] - last_beat)
+            kicks.append([last_beat, duration, beat[1]])
+            last_beat = beat[0]
+        duration = 1. / (1. - last_beat)
+        kicks.append([last_beat, duration, beat[1]])
 
-        current_beat = 0
-        for beat, n in sorted(a.items(), key=itemgetter(0)):
-            if beat < current_beat:
-                continue
-            kicks.append([beat, n[0], n[1]])
-            current_beat += 1 / n[0]
         return kicks
 
     def generate_chord_bar(self, chords_, rhythm_bar):
