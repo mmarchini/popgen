@@ -5,8 +5,8 @@ from mingus.containers import Note
 
 
 def get_scale(scale):
-    scale_mode = scales.Major if scale.isupper() else scales.NaturalMinor
-    return scale_mode(scale.upper())
+    scale_mode = scales.Major if scale[0].isupper() else scales.NaturalMinor
+    return scale_mode(scale.title())
 
 
 def notes_from_range(scale, a, b):
@@ -32,12 +32,12 @@ def notes_from_range(scale, a, b):
 
 
 def calc_preferred_range(scale, center, lower, upper):
-    valid_notes = get_scale(scale).ascending()[:-1]
-    lowest_note = "%s-0" % valid_notes[0]
-    highest_note = "%s-10" % valid_notes[-1]
+    full_scale = get_scale(scale).ascending()[:-1]
+    lowest_note = "%s-1" % full_scale[0]
+    highest_note = "%s-10" % full_scale[-1]
     valid_notes = notes_from_range(scale, lowest_note, highest_note)
 
-    center = Note(scale.upper(), center)
+    center = Note(scale.title(), center)
     center_idx = valid_notes.index(center)
 
     upper_boundary = valid_notes[center_idx + upper]

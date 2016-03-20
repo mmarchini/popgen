@@ -128,7 +128,7 @@ class Composer(object):
 
         tempo = params['tempo']
         tempo = define_tempo(tempo['lower'], tempo['upper'])
-        tempo = params['tempo'].get('fixed', tempo)
+        tempo = params['tempo'].get('fixed') or tempo
 
         key = params.get('key')
 
@@ -160,6 +160,7 @@ class Composer(object):
         phrase_structure = PhraseStructure()
 
         composer = cls(
+            bpm=tempo,
             rhythm=rhythm,
             harmony=harmony,
             melody=melody,

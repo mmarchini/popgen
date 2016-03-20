@@ -36,7 +36,7 @@ class Harmony(object):
             probabilities = self.markov_chain[self.key.index(harmony[-1])]
 
             prob_sum = D(sum(probabilities))
-            normalized = [prob / prob_sum for prob in probabilities]
+            normalized = [D(prob) / prob_sum for prob in probabilities]
 
             note = self.key[rv_discrete(values=(range(6), normalized)).rvs()]
             harmony.append(note)
