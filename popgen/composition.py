@@ -75,7 +75,7 @@ class Composer(object):
         self.drum_track.instrument = MidiInstrument()
 
         chords_instrument = self.instrument('chord')
-        self.harmony.instrument = chords_instrument
+        self.harmony.instrument = chords_instrument()
         self.chords_track = Track()
         self.chords_track.channel = 1
         self.chords_track.instrument = chords_instrument.get_midi_instrument()

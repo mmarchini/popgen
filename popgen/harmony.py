@@ -63,11 +63,8 @@ class Harmony(object):
 
         chord_bars = []
         for chord in chords_:
-            chord = chords.from_shorthand(chord)
-            chord = "{0}-3 {2}-4 {0}-4 {1}-4".format(*chord).split(" ")
-            # chord = "{0}-3 {1}-3 {2}-3".format(*chord).split(" ")
             new_bar = Bar()
-            N = lambda note: None if note is None else NoteContainer(chord)
+            N = lambda note: None if note is None else self.instrument.chord(chord)
             new_bar.bar = [[a[0], a[1], N(a[2])] for a in kicks]
             new_bar.current_beat = 1.0
             chord_bars.append(new_bar)
