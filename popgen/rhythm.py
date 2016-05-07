@@ -6,8 +6,9 @@ from operator import itemgetter
 
 from scipy.stats import rv_discrete
 
-from mingus.containers import instrument
 from mingus.containers import Bar, NoteContainer
+
+from popgen.instruments import AcousticPercussion
 
 # TEMPO_DISTRIBUTION = [
 #     (60,  0.01),
@@ -45,9 +46,9 @@ POSITION_WEIGHT = [
 
 class Rhythm(object):
 
-    def __init__(self, tempo):
+    def __init__(self, tempo, instrument=AcousticPercussion):
         self.tempo = tempo
-        self.drum = instrument.MidiPercussionInstrument()
+        self.instrument = instrument
 
     def number_of_kicks(self):
         kicks_mean = 1. + ((abs((self.tempo - 160.) / 40.)))
@@ -71,7 +72,7 @@ class Rhythm(object):
 
             kicks.append((random.choice(p), duration))
             kicks = sorted(kicks, key=itemgetter(0))
-        return (self.drum.bass_drum_1(), kicks)
+        return (self.instrument.kick, kicks)
 
     def generate_snares(self):
         R = lambda values: rv_discrete(values=values).rvs()
@@ -87,7 +88,7 @@ class Rhythm(object):
 
             snares.append((random.choice(p), duration))
             snares = sorted(snares, key=itemgetter(0))
-        return (self.drum.acoustic_snare(), snares)
+        return (self.instrument.snare, snares)
 
     def generate_hihats(self):
         R = lambda values: rv_discrete(values=values).rvs()
@@ -103,7 +104,7 @@ class Rhythm(object):
 
             hihats.append((random.choice(p), duration))
             hihats = sorted(hihats, key=itemgetter(0))
-        return (self.drum.pedal_hi_hat(), hihats)
+        return (self.instrument.hi_hat, hihats)
 
     def generate_rides(self):
         R = lambda values: rv_discrete(values=values).rvs()
@@ -119,7 +120,7 @@ class Rhythm(object):
 
             rides.append((random.choice(p), duration))
             rides = sorted(rides, key=itemgetter(0))
-        return (self.drum.ride_cymbal_1(), rides)
+        return (self.instrument.ride, rides)
 
     def generate_bar(self):
         beats = [

@@ -18,6 +18,7 @@ from popgen.instruments import Instrument
 
 DEFAULT_INSTRUMENTS = {
     'melody': 'Overdriven Guitar',
+    'rhythm': 'Acoustic Percussion',
     'chord': 'Electric Guitar (jazz)',
     'bass': 'Electric Bass (finger)',
 }
@@ -72,6 +73,7 @@ class Composer(object):
     def compose(self):
         self.drum_track = Track()
         self.drum_track.channel = 9
+        self.rhythm.instrument = self.instrument('rhythm')
         self.drum_track.instrument = MidiInstrument()
 
         chords_instrument = self.instrument('chord')
