@@ -1,0 +1,7 @@
+# test_instrument('Acoustic Grand Piano', 'C-2', 'C-5')
+# test_instrument('Honky-tonk Piano', 'C-2', 'C-5')
+# test_instrument('Electric Grand Piano', 'C-2', 'C-5')
+# test_instrument('Electric Piano 1', 'C-2', 'C-5')
+# test_instrument('Bright Acoustic Piano', 'C-2', 'C-5')
+# test_instrument('Electric Piano 2', 'C-2', 'C-5')
+# test_instrument('Bright Acoustic Piano', 'C-2', 'C-5')

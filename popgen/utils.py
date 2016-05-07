@@ -1,7 +1,15 @@
 import collections
 
 from mingus.core import scales
-from mingus.containers import Note
+from mingus.containers import Note, Bar, NoteContainer
+
+
+def silent_bar():
+    _silent_bar = Bar()
+    silent_note = Note('C', 1)
+    silent_note.velocity = 0
+    _silent_bar.place_notes(NoteContainer(silent_note), 1)
+    return _silent_bar
 
 
 def get_scale(scale):

@@ -4,7 +4,7 @@ from mingus.midi.midi_file_out import write_Composition
 from mingus.containers import Track, MidiInstrument, Composition
 # from mingus.containers.instrument import MidiPercussionInstrument
 
-from popgen.utils import recursive_update_dict
+from popgen.utils import recursive_update_dict, silent_bar
 from popgen.utils import calc_preferred_range, calc_maximum_range
 from popgen.rhythm import Rhythm
 from popgen.harmony import Harmony, DEFAULT_MARKOV_CHAIN
@@ -108,6 +108,11 @@ class Composer(object):
             self.bass_track.add_bar(bass_bars[i % len(bass_bars)])
             self.melody_track.add_bar(melody_bar)
             self.drum_track.add_bar(drum_bar)
+        # Silent bar
+        self.chords_track.add_bar(silent_bar())
+        self.bass_track.add_bar(silent_bar())
+        self.melody_track.add_bar(silent_bar())
+        self.drum_track.add_bar(silent_bar())
 
     def save(self, filename):
         composition = Composition()

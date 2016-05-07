@@ -1,0 +1,5 @@
+# test_instrument('Trumpet', 'C-3', 'D-5')
+# test_instrument('Alto Sax', 'G-3', 'E-5')
+# test_instrument('Tenor Sax', 'A-3', 'G-5')
+# test_instrument('Baritone Sax', 'C-2', 'C-4')
+# test_instrument('Soprano Sax', 'A-1', 'C-4')
