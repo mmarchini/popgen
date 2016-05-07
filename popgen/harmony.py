@@ -1,6 +1,5 @@
 
 import random
-from operator import itemgetter
 from decimal import Decimal as D
 from functools import partial
 
@@ -8,6 +7,8 @@ from scipy.stats import rv_discrete
 
 from mingus.core import chords
 from mingus.containers import Bar, NoteContainer
+
+from popgen.instruments import Instrument
 
 determine = partial(chords.determine, shorthand=True, no_inversions=True)
 
@@ -23,8 +24,10 @@ DEFAULT_MARKOV_CHAIN = [
 
 class Harmony(object):
 
-    def __init__(self, key="C", markov_chain=DEFAULT_MARKOV_CHAIN):
+    def __init__(self, key="C", instrument=Instrument,
+                 markov_chain=DEFAULT_MARKOV_CHAIN):
         triads = chords.triads(key)[:-1]
+        self.instrument = instrument
         self.key = [determine(t)[0] for t in triads]
         self.markov_chain = markov_chain
 

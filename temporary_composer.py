@@ -3,7 +3,7 @@ import subprocess
 
 from ministrel import utils
 
-from popgen import composition
+from popgen import composition, soundfonts
 
 composer = composition.Composer.from_yaml('tests.yaml')
 
@@ -15,5 +15,5 @@ midi_file = '/tmp/teste.midi'
 wave_file = '/tmp/teste.wav'
 composer.save(midi_file)
 print("Opening song...")
-utils.play(midi_file, utils.DEFAULT_SOUNDFONT, wave_file)
+utils.play(midi_file, soundfonts.DEFAULT_SOUNDFONT, wave_file)
 subprocess.call(['aplay', wave_file])

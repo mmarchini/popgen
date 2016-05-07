@@ -11,6 +11,7 @@ from popgen.harmony import Harmony, DEFAULT_MARKOV_CHAIN
 from popgen.tempo import define_tempo
 from popgen.melody import Melody, DYNAMICS, HARMONIC_COMPILANCE
 from popgen.phrase_structure import PhraseStructure
+from popgen.instruments import Instrument
 
 # from popgen import (rhythm as rhythm_, harmony as harmony_, tempo as tempo_,
 #                     melody as melody_, phrase_structure as phrase_structure_)
@@ -65,33 +66,29 @@ class Composer(object):
     def instrument(self, name, instrument=None):
         if instrument:
             self._instruments[name] = instrument
-        return self._instruments[name]
+        print self._instruments[name]
+        return Instrument.get_instrument_by_name(self._instruments[name])
 
     def compose(self):
         self.drum_track = Track()
         self.drum_track.channel = 9
         self.drum_track.instrument = MidiInstrument()
 
-        chords_instrumnet = MidiInstrument(name=self.instrument('chord'))
-        instr_nr = MidiInstrument.names.index(chords_instrumnet.name) + 1
-        chords_instrumnet.instrument_nr = instr_nr
+        chords_instrument = self.instrument('chord')
+        self.harmony.instrument = chords_instrument
         self.chords_track = Track()
         self.chords_track.channel = 1
-        self.chords_track.instrument = chords_instrumnet
+        self.chords_track.instrument = chords_instrument.get_midi_instrument()
 
-        bass_instrument = MidiInstrument(name=self.instrument('bass'))
-        instr_nr = MidiInstrument.names.index(bass_instrument.name) + 1
-        bass_instrument.instrument_nr = instr_nr
+        bass_instrument = self.instrument('bass')
         self.bass_track = Track()
         self.bass_track.channel = 2
-        self.bass_track.instrument = bass_instrument
+        self.bass_track.instrument = bass_instrument.get_midi_instrument()
 
-        melody_instrument = MidiInstrument(name=self.instrument('melody'))
-        instr_nr = MidiInstrument.names.index(melody_instrument.name) + 1
-        melody_instrument.instrument_nr = instr_nr
+        melody_instrument = self.instrument('melody')
         self.melody_track = Track()
         self.melody_track.channel = 0
-        self.melody_track.instrument = melody_instrument
+        self.melody_track.instrument = melody_instrument.get_midi_instrument()
 
         drum_bar = self.rhythm.generate_bar()
 
