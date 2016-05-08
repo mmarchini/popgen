@@ -38,7 +38,7 @@ class PianoPercussion(Percussion):
 
 
 class NoPercussion(Percussion):
-    _instrument = "Piano Percussion"
+    _instrument = "No Percussion"
     kick = Note('C-0')  # MidiPercussionInstrument().acoustic_bass_drum()
     snare = Note('C-0')  # MidiPercussionInstrument().acoustic_snare()
     hi_hat = Note('C-0')  # MidiPercussionInstrument().pedal_hi_hat()

@@ -34,13 +34,13 @@ DEFAULT_PARAMETERS = {
         'harmonic_compilance': HARMONIC_COMPILANCE,
         'power': 1,
         'preferred_range': {
-            'center': 4,
-            'lower_offset': 2,
-            'upper_offset': 5
+            'center': 0.5,
+            'lower_offset': 0.25,
+            'upper_offset': 0.75
         },
         'maximum_range': {
-            'lower_offset': 1,
-            'upper_offset': 3
+            'lower_offset': 0.1,
+            'upper_offset': 0.9
         },
         'inner_drop_off': 0.04,
         'outer_drop_off': 0.15,
@@ -144,13 +144,16 @@ class Composer(object):
         )
 
         melody = params['melody']
-        center = melody['preferred_range']['center']
+        melody_instrument = Instrument.get_instrument_by_name(params['instruments']['melody'])
+        # center = melody['preferred_range']['center']
         lower = melody['preferred_range']['lower_offset']
         upper = melody['preferred_range']['upper_offset']
-        preferred_range = calc_preferred_range(key, center, lower, upper)
+        preferred_range = melody_instrument.get_range(key, lower, upper)
+        print preferred_range
         lower = melody['maximum_range']['lower_offset']
         upper = melody['maximum_range']['upper_offset']
-        maximum_range = calc_maximum_range(key, preferred_range, lower, upper)
+        maximum_range = melody_instrument.get_range(key, lower, upper)
+        print maximum_range
         melody = Melody(
             scale=key,
             tempo=tempo,

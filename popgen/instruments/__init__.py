@@ -5,3 +5,4 @@ from orchestra import *
 from pianos import *
 from saxes import *
 from techno import *
+from others import *

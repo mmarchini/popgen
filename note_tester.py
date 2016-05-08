@@ -58,6 +58,9 @@ def test_instrument(instrument, a, b):
 
 # Acoustic #
 #  Melody
+# test_instrument('Accordion', 'C-4', 'C-6')
+# test_instrument('Harmonica', 'C-4', 'C-6')
+# test_instrument('Tango Accordion', 'G-2', 'G-4')
 # test_instrument('Acoustic Guitar (steel)', 'A-2', 'G-4')
 #  Chord
 # test_instrument('Acoustic Guitar (nylon)', 'A-2', 'C-5')
