@@ -50,7 +50,7 @@ class Melody(object):
         self._max_notes = notes_from_range(self.scale, *self.maximum_range)
         for phrase, bars in self.phrase_structure:
             melody_bars.extend(self._generate_phrase_bars(phrase, bars))
-
+        print melody_bars
         return melody_bars
 
     def _generate_phrase_bars(self, phrase, bars):
@@ -96,10 +96,14 @@ class Melody(object):
                     self.last_note = (note, beat)
                     if note is not None:
                         cbeat = int(16 * self.current_beat)
-                        note.velocity = 117 + self.dynamics[cbeat]
+                        velocity = 110 + self.dynamics[cbeat]
+                        velocity = velocity if velocity < 128 else 127
+                        note.velocity = velocity
                         note = NoteContainer(note)
                     note = note
+                    # print note, beat
                     melody_bar.place_notes(note, beat)
+                print melody_bar
                 phrase_bars.append(melody_bar)
 
         self._phrases[phrase] = phrase_bars
@@ -156,13 +160,17 @@ class Melody(object):
         pref_notes = self._pref_notes
         maximum_notes = self._max_notes
 
-        if not getattr(self, 'lower', None):
+        if not getattr(self, 'lower_note', None):
+            self.lower_note = min(pref_notes)
+        if not getattr(self, 'upper_note', None):
+            self.upper_note = max(pref_notes)
+
+        if getattr(self, 'lower', None) is None:
             self.lower = filter(lambda r: r < min(pref_notes), maximum_notes)
-            self.lower_note = max(self.lower)
-        if not getattr(self, 'upper', None):
-            self.upper = filter(lambda r: r > min(pref_notes), maximum_notes)
-            self.upper_note = min(self.upper)
-        if self.lower_note < note < self.upper_note:
+        if getattr(self, 'upper', None) is None:
+            self.upper = filter(lambda r: r > max(pref_notes), maximum_notes)
+
+        if self.lower_note <= note <= self.upper_note:
             if len(pref_notes) % 2 == 1:
                 median = len(pref_notes) / 2
             else:
