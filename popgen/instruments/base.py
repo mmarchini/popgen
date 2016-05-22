@@ -51,11 +51,7 @@ class Instrument(object):
         notes.append(next_note)
         lower_index = int(floor(len(notes) * lower))
         upper_index = int(ceil(len(notes) * upper))
-        print notes
         notes = notes[lower_index:upper_index]
-        print lower, upper
-        print lower_index, upper_index
-        print notes
 
         full_scale = get_scale(scale).ascending()[:-1]
         lowest_note = "%s-1" % full_scale[0]

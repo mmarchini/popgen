@@ -50,7 +50,6 @@ class Melody(object):
         self._max_notes = notes_from_range(self.scale, *self.maximum_range)
         for phrase, bars in self.phrase_structure:
             melody_bars.extend(self._generate_phrase_bars(phrase, bars))
-        print melody_bars
         return melody_bars
 
     def _generate_phrase_bars(self, phrase, bars):
@@ -101,9 +100,7 @@ class Melody(object):
                         note.velocity = velocity
                         note = NoteContainer(note)
                     note = note
-                    # print note, beat
                     melody_bar.place_notes(note, beat)
-                print melody_bar
                 phrase_bars.append(melody_bar)
 
         self._phrases[phrase] = phrase_bars

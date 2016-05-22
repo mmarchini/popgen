@@ -31,10 +31,10 @@ class OrchestraPercussion(Percussion):
 
 class PianoPercussion(Percussion):
     _instrument = "Piano Percussion"
-    kick = Note('C-0')  # MidiPercussionInstrument().acoustic_bass_drum()
-    snare = Note('C-0')  # MidiPercussionInstrument().acoustic_snare()
-    hi_hat = Note('C-0')  # MidiPercussionInstrument().pedal_hi_hat()
-    ride = Note('C-0')  # MidiPercussionInstrument().ride_cymbal_1()
+    kick = MidiPercussionInstrument().acoustic_bass_drum()
+    snare = MidiPercussionInstrument().acoustic_snare()
+    hi_hat = MidiPercussionInstrument().open_hi_hat()
+    ride = MidiPercussionInstrument().high_timbale()
 
 
 class NoPercussion(Percussion):

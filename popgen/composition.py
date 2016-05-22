@@ -28,6 +28,7 @@ DEFAULT_PARAMETERS = {
         'markov_chain': DEFAULT_MARKOV_CHAIN
     },
     'instruments': DEFAULT_INSTRUMENTS,
+    'phrase_structure': PhraseStructure(),
     'key': 'C',
     'melody': {
         'dynamics': DYNAMICS,
@@ -66,7 +67,6 @@ class Composer(object):
     def instrument(self, name, instrument=None):
         if instrument:
             self._instruments[name] = instrument
-        print self._instruments[name]
         return Instrument.get_instrument_by_name(self._instruments[name])
 
     def compose(self):
@@ -160,7 +160,7 @@ class Composer(object):
             outer_drop_off=melody['outer_drop_off']
         )
 
-        phrase_structure = PhraseStructure()
+        phrase_structure = params.get('phrase_structure')
 
         composer = cls(
             bpm=tempo,
