@@ -28,7 +28,7 @@ DEFAULT_PARAMETERS = {
         'markov_chain': DEFAULT_MARKOV_CHAIN
     },
     'instruments': DEFAULT_INSTRUMENTS,
-    'phrase_structure': PhraseStructure(),
+    'phrase_structure': list(PhraseStructure()),
     'key': 'C',
     'melody': {
         'dynamics': DYNAMICS,
