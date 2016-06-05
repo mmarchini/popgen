@@ -24,6 +24,8 @@ HARMONIC_COMPILANCE = [
 
 DYNAMICS = [10, 1, 3, 1, 6, 1, 3, 1, 8, 1, 3, 1, 6, 1, 3, 1]
 
+CONTINUATION = [1.6, 1.35, 1.19, 0.9, 0.75, 0.6, 0.5, 0.45, 0.41, 0.35]
+
 
 class Melody(object):
 
@@ -43,11 +45,62 @@ class Melody(object):
         self.phrase_structure = []
         self.harmony = []
 
+    def _init_caches(self):
+        self.ambitus_cache = {}
+
+        self.current_direction = 0
+        self.steps_in_same_direction = 0
+
+        self._pref_notes = notes_from_range(self.scale, *self.preferred_range)
+        self._max_notes = notes_from_range(self.scale, *self.maximum_range)
+
+        self.suggested_notes = []
+        for note in self._max_notes:
+            for beat in [2, dots(4), 4, dots(8), 8, 16]:
+                self.suggested_notes.append((note, beat))
+        self.suggested_indexes = map(
+            lambda v: self.suggested_notes.index(v),
+            self.suggested_notes
+        )
+
+        beat_range = lambda a, b, c: [i / 16. for i in range(a, b, c)]
+
+        self.possible_beats = {
+            2: [0.15 + (0.0075 * (self.tempo - 70)), beat_range(0, 16, 8)],
+            dots(4): [
+                0.35 + (0.0085 * (self.tempo - 70)), beat_range(0, 12, 2)],
+            4: [0.5 + (0.007 * (self.tempo - 70)), beat_range(0, 16, 4)],
+            dots(8): [
+                0.151 - (0.002 * (self.tempo - 70)), beat_range(0, 14, 2)],
+            8: [abs(0.016 * (self.tempo - 100)), beat_range(0, 16, 2)],
+            16: [
+                0.65 - (0.014 * (self.tempo - 70)), beat_range(0, 16, 1), None]
+        }
+        self.note_length_cache = {}
+
+        self.poor_compilance_score = {
+            2: 0.1,
+            dots(4): 0.6,
+            4: 1,
+            dots(8): 1.1,
+            8: 1.18,
+            16: 1.25
+        }
+
+        self.good_compilance_score = score = {
+            2: 1.25,
+            dots(4): 1.15,
+            4: 1,
+            dots(8): 0.7,
+            8: 0.37,
+            16: 0.1
+        }
+
     def generate_melody(self, ):
         melody_bars = []
         self._phrases = {}
-        self._pref_notes = notes_from_range(self.scale, *self.preferred_range)
-        self._max_notes = notes_from_range(self.scale, *self.maximum_range)
+        self._init_caches()
+
         for phrase, bars in self.phrase_structure:
             melody_bars.extend(self._generate_phrase_bars(phrase, bars))
         return melody_bars
@@ -58,26 +111,16 @@ class Melody(object):
         phrase_bars = []
         self.melody = []
         self.last_note = (None, None)
-        possible_notes = self._max_notes
         for bar in range(bars):
             for chord in self.harmony:
                 self.current_chord = chord
                 self.melody.append([])
                 melody_bar = Bar()
 
-                suggested_notes = []
-                for note in possible_notes:
-                    for beat in [2, dots(4), 4, dots(8), 8, 16]:
-                        suggested_notes.append((note, beat))
-                suggested_indexes = map(
-                    lambda v: suggested_notes.index(v),
-                    suggested_notes
-                )
-
                 while not melody_bar.is_full():
                     probabilities = []
                     self.current_beat = melody_bar.current_beat
-                    for note, beat in suggested_notes:
+                    for note, beat in self.suggested_notes:
                         probabilities.append(self.calculate_score(note, beat))
 
                     total = Decimal(sum(probabilities))
@@ -87,10 +130,10 @@ class Melody(object):
                         normalize = lambda p: p / total
                         probabilities = map(normalize, probabilities)
 
-                        values = [suggested_indexes, probabilities]
+                        values = [self.suggested_indexes, probabilities]
                         index = rv_discrete(values=values).rvs()
 
-                        note, beat = suggested_notes[index]
+                        note, beat = self.suggested_notes[index]
                     self.melody[-1].append((note, beat))
                     self.last_note = (note, beat)
                     if note is not None:
@@ -152,6 +195,11 @@ class Melody(object):
         comfortable range for the singer in which most of the pitches should
         reside.'''
 
+        score = self.ambitus_cache.get(note, None)
+
+        if score:
+            return score
+
         score = Decimal(1)
 
         pref_notes = self._pref_notes
@@ -188,6 +236,7 @@ class Melody(object):
 
         score *= Decimal(1 - lowered_by)
 
+        self.ambitus_cache[note] = score
         return score
 
     def calculate_harmonic_compilance(self, note):
@@ -289,25 +338,19 @@ class Melody(object):
         not allowed to have an even length.
         '''
 
-        beat_range = lambda a, b, c: [i / 16. for i in range(a, b, c)]
-
-        possible_beats = {
-            2: [0.15 + (0.0075 * (self.tempo - 70)), beat_range(0, 16, 8)],
-            dots(4): [
-                0.35 + (0.0085 * (self.tempo - 70)), beat_range(0, 12, 2)],
-            4: [0.5 + (0.007 * (self.tempo - 70)), beat_range(0, 16, 4)],
-            dots(8): [
-                0.151 - (0.002 * (self.tempo - 70)), beat_range(0, 14, 2)],
-            8: [abs(0.016 * (self.tempo - 100)), beat_range(0, 16, 2)],
-            16: [
-                0.65 - (0.014 * (self.tempo - 70)), beat_range(0, 16, 1), None]
-        }
-        beat_ = possible_beats.get(beat, None)
+        score = self.note_length_cache.get((self.current_beat, beat), None)
+        if score:
+            return Decimal(score)
 
         if self.current_beat + (16. / beat) / 16. > 1.0:
+            self.note_length_cache[(self.current_beat, beat)] = -1000
             return -1000
-        elif beat_:
+
+        beat_ = self.possible_beats.get(beat, None)
+
+        if beat_:
             if beat_[1] and self.current_beat not in beat_[1]:
+                self.note_length_cache[(self.current_beat, beat)] = -1000
                 return -1000
             score = beat_[0]
         else:
@@ -315,6 +358,7 @@ class Melody(object):
 
         if score < 0:
             score = -1000
+        self.note_length_cache[(self.current_beat, beat)] = score
         return Decimal(score)
 
     # TODO calculate_note_length_n_harmonic_compilance
@@ -339,27 +383,13 @@ class Melody(object):
         if current_note_compilance < 0.5:
             # Shorter with poor = slightly higher
             # Longer with poor = lower
-            score = {
-                2: 0.1,
-                dots(4): 0.6,
-                4: 1,
-                dots(8): 1.1,
-                8: 1.18,
-                16: 1.25
-            }[beat]
+            self.poor_compilance_score[beat]
 
         # Good
         else:
             # Shorter with good = lower
             # Longer with good = slightly higher
-            score = {
-                2: 1.25,
-                dots(4): 1.15,
-                4: 1,
-                dots(8): 0.7,
-                8: 0.37,
-                16: 0.1
-            }[beat]
+            self.good_compilance_score[beat]
 
         return Decimal(score)
 
@@ -430,38 +460,23 @@ class Melody(object):
         statistical foundation can be seen in Figure 8 (Elowsson, 2012).
         '''
 
-        same_direction = True
-        count = 0
-        direction = 0
-        last_note = note
-        for bar in reversed(self.melody):
-            for note, beat in reversed(bar):
-                if note is None:
-                    continue
-                current_direction = copysign(1, int(last_note) - int(note))
-                if note == last_note:
-                    last_note = note
-                    count += 1
-                elif direction == 0:
-                    direction = current_direction
-                    last_note = note
-                    count += 1
-                elif direction == current_direction:
-                    last_note = note
-                    count += 1
-                else:
-                    same_direction = False
-                    break
-            if not same_direction:
-                break
+        # TODO review
+        last_note = self.last_note[0] or note
+        direction = copysign(1, int(note) - int(last_note))
+        if self.current_direction == 0:
+            self.current_direction = direction
+            self.steps_in_same_direction = 0
+        elif copysign(1, self.current_direction) == direction:
+            self.steps_in_same_direction += 1
+        else:
+            self.current_direction = 0
+            self.steps_in_same_direction = 0
 
-        p = [1.6, 1.35, 1.19, 0.9, 0.75, 0.6, 0.5, 0.45, 0.41, 0.35]
-        if count > len(p):
-            return 0
-        elif direction == 0:
+        if self.steps_in_same_direction == 0:
             return Decimal(0.1)
-
-        return Decimal(p[count - 1])
+        elif self.steps_in_same_direction > len(CONTINUATION):
+            return Decimal(0.1)
+        return Decimal(CONTINUATION[self.steps_in_same_direction - 1])
 
     def calculate_score(self, note, beat):
         score = 0
@@ -481,16 +496,16 @@ class Melody(object):
         score += self.calculate_note_length_n_harmonic_compilance(note, beat)
 
         # 6. Note Length & Interval Size
-        score += self.calculate_note_length_n_interval_size(note)
+        # score += self.calculate_note_length_n_interval_size(note)
 
         # 7. Prase Arch
-        score += self.calculate_prase_arch(note)
+        # score += self.calculate_prase_arch(note)
 
         # 8. Tonal Resolution
-        score += self.calculate_tonal_resolution(note)
+        # score += self.calculate_tonal_resolution(note)
 
         # 9. Repetition
-        score += self.calculate_repetition(note)
+        # score += self.calculate_repetition(note)
 
         # 10. Good Continuation
         score += self.calculate_good_continuation(note)
