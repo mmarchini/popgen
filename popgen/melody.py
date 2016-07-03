@@ -233,7 +233,7 @@ class Melody(object):
         if self._intervals_n_harmonic_compliance.get((last_note, note)):
             return self._intervals_n_harmonic_compliance[(last_note, note)]
 
-        # Harmonic Compilance
+        # Harmonic Compliance
         C = self.get_note_chord_compliance
         interval = self.get_interval(last_note, note)
         last_note_compliance = C(last_note, self.current_chord)
@@ -336,16 +336,16 @@ class Melody(object):
         # Ambitus
         score += self.calculate_ambitus(note)
 
-        # Harmonic Compilance
+        # Harmonic Compliance
         score += self.calculate_harmonic_compliance(note)
 
-        # Intervals & Harmonic Compilance
+        # Intervals & Harmonic Compliance
         score += self.calculate_intervals_n_harmonic_compliance(note)
 
         # Note Length
         score += self.calculate_note_length(beat)
 
-        # Note Length & Harmonic Compilance
+        # Note Length & Harmonic Compliance
         score += self.calculate_note_length_n_harmonic_compliance(note, beat)
 
         # Good Continuation
