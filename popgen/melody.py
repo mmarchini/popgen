@@ -114,7 +114,6 @@ class Melody(object):
                 self.current_chord = chord
                 self.melody.append([])
                 melody_bar = Bar()
-
                 while not melody_bar.is_full():
                     probabilities = []
                     self.current_beat = melody_bar.current_beat
@@ -143,9 +142,7 @@ class Melody(object):
                     note = note
                     melody_bar.place_notes(note, beat)
                 phrase_bars.append(melody_bar)
-
         self._phrases[phrase] = phrase_bars
-
         return phrase_bars
 
     def get_note_chord_compliance(self, note, chord):
