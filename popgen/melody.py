@@ -13,7 +13,7 @@ from mingus.containers import NoteContainer, Bar
 from popgen.harmony import determine
 from popgen.utils import notes_from_range, get_scale
 
-HARMONIC_COMPILANCE = [
+HARMONIC_COMPLIANCE = [
     [0.94, 0.30, 0.95, 0.16, 0.87, 0.26, 0.15],  # I
     [0.20, 0.90, 0.26, 0.86, 0.24, 0.88, 0.02],  # II
     [0.01, 0.18, 0.87, 0.09, 0.89, 0.24, 0.83],  # III
@@ -32,7 +32,7 @@ class Melody(object):
     def __init__(self, scale="C", tempo=110, power=1,
                  preferred_range=("A-3", "A-4"), maximum_range=("F-2", "D-4"),
                  inner_drop_off=0.04, outer_drop_off=0.15,
-                 harmonic_compilance=HARMONIC_COMPILANCE, dynamics=DYNAMICS):
+                 harmonic_compliance=HARMONIC_COMPLIANCE, dynamics=DYNAMICS):
         self.preferred_range = preferred_range
         self.maximum_range = maximum_range
         self.inner_drop_off = inner_drop_off
@@ -40,7 +40,7 @@ class Melody(object):
         self.power = power
         self.scale = scale
         self.tempo = tempo
-        self.harmonic_compilance = harmonic_compilance
+        self.harmonic_compliance = harmonic_compliance
         self.dynamics = dynamics
         self.phrase_structure = []
         self.harmony = []
@@ -76,7 +76,7 @@ class Melody(object):
                 0.65 - (0.014 * (self.tempo - 70)), beat_range(0, 16, 1), None]
         }
 
-        self.poor_compilance_score = {
+        self.poor_compliance_score = {
             2: 0.1,
             dots(4): 0.6,
             4: 1,
@@ -85,7 +85,7 @@ class Melody(object):
             16: 1.25
         }
 
-        self.good_compilance_score = {
+        self.good_compliance_score = {
             2: 1.25,
             dots(4): 1.15,
             4: 1,
@@ -148,22 +148,22 @@ class Melody(object):
 
         return phrase_bars
 
-    def get_note_chord_compilance(self, note, chord):
-        if not getattr(self, "_chord_compilance", None):
-            self._chord_compilance = {}
-        if not self._chord_compilance.get((note, chord)):
+    def get_note_chord_compliance(self, note, chord):
+        if not getattr(self, "_chord_compliance", None):
+            self._chord_compliance = {}
+        if not self._chord_compliance.get((note, chord)):
             a = ['I', 'II', 'III', 'IV', 'V', 'VI']
 
             key_chords = map(determine, progressions.to_chords(a, self.scale))
             key_chords = map(itemgetter(0), key_chords)
 
-            p = self.harmonic_compilance[key_chords.index(chord)]
+            p = self.harmonic_compliance[key_chords.index(chord)]
             comp = p[get_scale(self.scale).ascending()
                      .index(note.name)]
 
-            self._chord_compilance[(note, chord)] = comp
+            self._chord_compliance[(note, chord)] = comp
 
-        return self._chord_compilance.get((note, chord))
+        return self._chord_compliance.get((note, chord))
 
     def get_interval(self, first_note, second_note):
 
@@ -183,12 +183,9 @@ class Melody(object):
 
     def calculate_ambitus(self, note):
         score = self.ambitus_cache.get(note, None)
-
         if score:
             return score
-
         score = Decimal(1)
-
         pref_notes = self._pref_notes
         maximum_notes = self._max_notes
 
@@ -222,33 +219,31 @@ class Melody(object):
             raise ValueError("Invalid note", note)
 
         score *= Decimal(1 - lowered_by)
-
         self.ambitus_cache[note] = score
         return score
 
-    def calculate_harmonic_compilance(self, note):
-        compilance = self.get_note_chord_compilance(note, self.current_chord)
-        return Decimal(compilance)
+    def calculate_harmonic_compliance(self, note):
+        compliance = self.get_note_chord_compliance(note, self.current_chord)
+        return Decimal(compliance)
 
-    def calculate_intervals_n_harmonic_compilante(self, note):
+    def calculate_intervals_n_harmonic_compliance(self, note):
         score = 1
         last_note = self.last_note[0]
         if last_note is None:
             return score
-        if not getattr(self, '_intervals_n_harmonic_compilante', None):
-            self._intervals_n_harmonic_compilante = {}
-        if self._intervals_n_harmonic_compilante.get((last_note, note)):
-            return self._intervals_n_harmonic_compilante[(last_note, note)]
+        if not getattr(self, '_intervals_n_harmonic_compliance', None):
+            self._intervals_n_harmonic_compliance = {}
+        if self._intervals_n_harmonic_compliance.get((last_note, note)):
+            return self._intervals_n_harmonic_compliance[(last_note, note)]
 
         # Harmonic Compilance
-
-        C = self.get_note_chord_compilance
+        C = self.get_note_chord_compliance
         interval = self.get_interval(last_note, note)
-        last_note_compilance = C(last_note, self.current_chord)
-        current_note_compilance = C(note, self.current_chord)
+        last_note_compliance = C(last_note, self.current_chord)
+        current_note_compliance = C(note, self.current_chord)
         # As it is not clear how they calculate, let's try guessing
-        last_note_score = interval * (last_note_compilance - 0.5)
-        current_note_score = interval * (current_note_compilance - 0.5)
+        last_note_score = interval * (last_note_compliance - 0.5)
+        current_note_score = interval * (current_note_compliance - 0.5)
         score += (last_note_score + current_note_score) / 2.0
 
         # One pitch step
@@ -256,7 +251,6 @@ class Melody(object):
         if interval >= 1:
             if not (last_note.name in chord_notes or note.name in chord_notes):
                 score -= 0.15
-
         # Two Pitch steps 1
         is_last_pentatonic = self.is_pentatonic(last_note)
         is_this_pentatonic = self.is_pentatonic(note)
@@ -266,14 +260,13 @@ class Melody(object):
                     score -= 0.1
                 else:
                     score -= 0.2
-
         # Two Pitch steps 2
         if interval >= 2:
             if not (is_last_pentatonic and is_this_pentatonic):
                 score -= 0.05
 
         score = Decimal(score)
-        self._intervals_n_harmonic_compilante[(last_note, note)] = score
+        self._intervals_n_harmonic_compliance[(last_note, note)] = score
         return score
 
     def calculate_note_length(self, beat):
@@ -300,26 +293,26 @@ class Melody(object):
         self.note_length_cache[(self.current_beat, beat)] = score
         return Decimal(score)
 
-    def calculate_note_length_n_harmonic_compilance(self, note, beat):
+    def calculate_note_length_n_harmonic_compliance(self, note, beat):
         last_note, last_beat = self.last_note
         if not last_note:
             return 0
 
         score = 1
-        C = self.get_note_chord_compilance
-        current_note_compilance = C(note, self.current_chord)
+        C = self.get_note_chord_compliance
+        current_note_compliance = C(note, self.current_chord)
 
         # Poor
-        if current_note_compilance < 0.5:
+        if current_note_compliance < 0.5:
             # Shorter with poor = slightly higher
             # Longer with poor = lower
-            self.poor_compilance_score[beat]
+            self.poor_compliance_score[beat]
 
         # Good
         else:
             # Shorter with good = lower
             # Longer with good = slightly higher
-            self.good_compilance_score[beat]
+            self.good_compliance_score[beat]
 
         return Decimal(score)
 
@@ -347,16 +340,16 @@ class Melody(object):
         score += self.calculate_ambitus(note)
 
         # Harmonic Compilance
-        score += self.calculate_harmonic_compilance(note)
+        score += self.calculate_harmonic_compliance(note)
 
         # Intervals & Harmonic Compilance
-        score += self.calculate_intervals_n_harmonic_compilante(note)
+        score += self.calculate_intervals_n_harmonic_compliance(note)
 
         # Note Length
         score += self.calculate_note_length(beat)
 
         # Note Length & Harmonic Compilance
-        score += self.calculate_note_length_n_harmonic_compilance(note, beat)
+        score += self.calculate_note_length_n_harmonic_compliance(note, beat)
 
         # Good Continuation
         score += self.calculate_good_continuation(note)
