@@ -1,13 +1,11 @@
-#!/usr/bin/env python
-
+#coding=utf8
 
 import random
 from operator import itemgetter
 
-from scipy.stats import rv_discrete
-
 from mingus.containers import Bar, NoteContainer
 
+from popgen.utils import WeightedChoice
 from popgen.instruments import AcousticPercussion
 
 # TEMPO_DISTRIBUTION = [
@@ -56,73 +54,79 @@ class Rhythm(object):
 
         return kicks
 
+    def calculate_beats(self, quantity, possible_durations, beats=[]):
+        duration_chooser = WeightedChoice(*possible_durations)
+
+        # Determina a posição e duração das notas
+        for i in range(quantity):
+            beat_duration = duration_chooser.choose()
+            beat_step = 16 / beat_duration
+
+            possible_positions = []
+            # Itera sobre as posições possíveis, baseado na duração da nota
+            for i in range(0, 16, beat_step):
+                # Verifica se a nota atual não se sobrepôe as notas
+                # já escolhidas
+                if not any([i <= beat[0] < i + beat_step for beat in beats]):
+                    possible_positions.append(i)
+
+            # Escolhe uma das notas possíveis
+            chosen_position = random.choice(possible_positions)
+            beats.append((chosen_position, beat_duration))
+
+            # Ordena as notas de acordo com as suas posições
+            beats = sorted(beats, key=itemgetter(0))
+        return beats
+
     def generate_kicks(self):
-        R = lambda: rv_discrete(values=[(4, 8), (0.60, 0.40)]).rvs()
-        kicks = [
-            (0, R())
-        ]
-        for i in range(self.number_of_kicks() - 1):
-            duration = R()
-            q = 16 / duration
+        u""" Gera os `kicks` que aparecerção na composição """
+        possible_durations = [(4, 0.60), (8, 0.40)]
 
-            p = []
-            for i in range(0, 16, q):
-                if not any([i <= kick[0] < i + q for kick in kicks]):
-                    p.append(i)
-
-            kicks.append((random.choice(p), duration))
-            kicks = sorted(kicks, key=itemgetter(0))
-        return (self.instrument.kick, kicks)
+        return (self.instrument.kick, self.calculate_beats(
+            quantity=self.number_of_kicks()-1,
+            possible_durations=possible_durations,
+            beats=[
+                (0, WeightedChoice(possible_durations).choose())
+            ]
+        ))
 
     def generate_snares(self):
-        R = lambda values: rv_discrete(values=values).rvs()
-        snares = []
-        for i in range(R(((1, 2, 3, 4, 0), (0.2, 0.4, 0.3, 0.09, 0.01)))):
-            duration = R([(4, 8, 16), (0.5, 0.3, 0.2)])
-            q = 16 / duration
+        u""" Gera os `snares` que aparecerção na composição """
+        number_of_snares = WeightedChoice(
+            (1, 0.2), (2, 0.4), (3, 0.3), (4, 0.09), (0, 0.01)
+        ).choose()
 
-            p = []
-            for i in range(0, 16, q):
-                if not any([i <= snare[0] < i + q for snare in snares]):
-                    p.append(i)
-
-            snares.append((random.choice(p), duration))
-            snares = sorted(snares, key=itemgetter(0))
-        return (self.instrument.snare, snares)
+        return (self.instrument.snare, self.calculate_beats(
+            quantity=number_of_snares,
+            possible_durations=[(4, 0.5), (8, 0.3), (16, 0.2)],
+        ))
 
     def generate_hihats(self):
-        R = lambda values: rv_discrete(values=values).rvs()
-        hihats = []
-        for i in range(R(((1, 2, 3, 4, 0), (0.2, 0.4, 0.3, 0.09, 0.01)))):
-            duration = R([(4, 8, 16), (0.5, 0.3, 0.2)])
-            q = 16 / duration
+        u""" Gera os `hihats` que aparecerção na composição """
+        number_of_hihats = WeightedChoice(
+            (1, 0.2), (2, 0.4), (3, 0.3), (4, 0.09), (0, 0.01)
+        ).choose()
 
-            p = []
-            for i in range(0, 16, q):
-                if not any([i <= ride[0] < i + q for ride in hihats]):
-                    p.append(i)
-
-            hihats.append((random.choice(p), duration))
-            hihats = sorted(hihats, key=itemgetter(0))
-        return (self.instrument.hi_hat, hihats)
+        return (self.instrument.hi_hat, self.calculate_beats(
+            quantity=number_of_hihats,
+            possible_durations=[(4, 0.5), (8, 0.3), (16, 0.2)],
+        ))
 
     def generate_rides(self):
-        R = lambda values: rv_discrete(values=values).rvs()
-        rides = []
-        for i in range(R(((1, 2, 3, 4, 0), (0.2, 0.4, 0.3, 0.09, 0.01)))):
-            duration = R([(4, 8), (0.60, 0.40)])
-            q = 16 / duration
+        u""" Gera os `rides` que aparecerção na composição """
+        number_of_rides = WeightedChoice(
+            (1, 0.2), (2, 0.4), (3, 0.3), (4, 0.09), (0, 0.01)
+        ).choose()
 
-            p = []
-            for i in range(0, 16, q):
-                if not any([i <= ride[0] < i + q for ride in rides]):
-                    p.append(i)
-
-            rides.append((random.choice(p), duration))
-            rides = sorted(rides, key=itemgetter(0))
-        return (self.instrument.ride, rides)
+        return (self.instrument.ride, self.calculate_beats(
+            quantity=number_of_rides,
+            possible_durations=[(4, 0.60), (8, 0.40)],
+        ))
 
     def generate_bar(self):
+        u""" Gera o ritmo da música, utilizando todas as notas de percussção
+        possívels. Retorna esse ritmo representado por um objeto do tipo
+        `mingus.container.Bar` """
         beats = [
             self.generate_kicks(),
             self.generate_rides(),

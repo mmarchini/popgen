@@ -1,5 +1,6 @@
 import collections
 
+from scipy.stats import rv_discrete
 from mingus.core import scales
 from mingus.containers import Note, Bar, NoteContainer
 
@@ -77,3 +78,11 @@ def recursive_update_dict(d, u):
         else:
             d[k] = u[k]
     return d
+
+
+class WeightedChoice(object):
+    def __init__(self, *options):
+        self.options = zip(*options)
+
+    def choose(self):
+        return rv_discrete(values=self.options).rvs()
