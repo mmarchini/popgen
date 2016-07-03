@@ -48,10 +48,9 @@ class Melody(object):
     def _init_caches(self):
         u""" Inicializa todas as caches utilizadas durante a composição """
         self.ambitus_cache = {}
-
         self.current_direction = 0
         self.steps_in_same_direction = 0
-
+        self.note_length_cache = {}
         self._pref_notes = notes_from_range(self.scale, *self.preferred_range)
         self._max_notes = notes_from_range(self.scale, *self.maximum_range)
 
@@ -65,7 +64,6 @@ class Melody(object):
         )
 
         beat_range = lambda a, b, c: [i / 16. for i in range(a, b, c)]
-
         self.possible_beats = {
             2: [0.15 + (0.0075 * (self.tempo - 70)), beat_range(0, 16, 8)],
             dots(4): [
@@ -77,7 +75,6 @@ class Melody(object):
             16: [
                 0.65 - (0.014 * (self.tempo - 70)), beat_range(0, 16, 1), None]
         }
-        self.note_length_cache = {}
 
         self.poor_compilance_score = {
             2: 0.1,
