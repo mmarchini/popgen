@@ -54,38 +54,44 @@ class Rhythm(object):
 
         return kicks
 
-    def calculate_beats(self, quantity, possible_durations, beats=[]):
+    def calculate_notes(self, quantity, possible_durations, notes=[]):
+        u""" Calcula a posição das notas de percussão dentr de uma barra.
+        O parâmetro `quantity` determina a quantidade de notas,
+        `possible_durations` as durações possíveis para as notas,
+        e o parâmetro opcional `notes` determina notas já presentes
+        na barra.
+        """
         duration_chooser = WeightedChoice(*possible_durations)
 
         # Determina a posição e duração das notas
         for i in range(quantity):
-            beat_duration = duration_chooser.choose()
-            beat_step = 16 / beat_duration
+            note_duration = duration_chooser.choose()
+            note_step = 16 / note_duration
 
             possible_positions = []
             # Itera sobre as posições possíveis, baseado na duração da nota
-            for i in range(0, 16, beat_step):
+            for i in range(0, 16, note_step):
                 # Verifica se a nota atual não se sobrepôe as notas
                 # já escolhidas
-                if not any([i <= beat[0] < i + beat_step for beat in beats]):
+                if not any([i <= note[0] < i + note_step for note in notes]):
                     possible_positions.append(i)
 
             # Escolhe uma das notas possíveis
             chosen_position = random.choice(possible_positions)
-            beats.append((chosen_position, beat_duration))
+            notes.append((chosen_position, note_duration))
 
             # Ordena as notas de acordo com as suas posições
-            beats = sorted(beats, key=itemgetter(0))
-        return beats
+            notes = sorted(notes, key=itemgetter(0))
+        return notes
 
     def generate_kicks(self):
         u""" Gera os `kicks` que aparecerção na composição """
         possible_durations = [(4, 0.60), (8, 0.40)]
 
-        return (self.instrument.kick, self.calculate_beats(
+        return (self.instrument.kick, self.calculate_notes(
             quantity=self.number_of_kicks()-1,
             possible_durations=possible_durations,
-            beats=[
+            notes=[
                 (0, WeightedChoice(possible_durations).choose())
             ]
         ))
@@ -96,7 +102,7 @@ class Rhythm(object):
             (1, 0.2), (2, 0.4), (3, 0.3), (4, 0.09), (0, 0.01)
         ).choose()
 
-        return (self.instrument.snare, self.calculate_beats(
+        return (self.instrument.snare, self.calculate_notes(
             quantity=number_of_snares,
             possible_durations=[(4, 0.5), (8, 0.3), (16, 0.2)],
         ))
@@ -107,7 +113,7 @@ class Rhythm(object):
             (1, 0.2), (2, 0.4), (3, 0.3), (4, 0.09), (0, 0.01)
         ).choose()
 
-        return (self.instrument.hi_hat, self.calculate_beats(
+        return (self.instrument.hi_hat, self.calculate_notes(
             quantity=number_of_hihats,
             possible_durations=[(4, 0.5), (8, 0.3), (16, 0.2)],
         ))
@@ -118,7 +124,7 @@ class Rhythm(object):
             (1, 0.2), (2, 0.4), (3, 0.3), (4, 0.09), (0, 0.01)
         ).choose()
 
-        return (self.instrument.ride, self.calculate_beats(
+        return (self.instrument.ride, self.calculate_notes(
             quantity=number_of_rides,
             possible_durations=[(4, 0.60), (8, 0.40)],
         ))
