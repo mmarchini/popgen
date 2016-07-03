@@ -46,6 +46,7 @@ class Melody(object):
         self.harmony = []
 
     def _init_caches(self):
+        u""" Inicializa todas as caches utilizadas durante a composição """
         self.ambitus_cache = {}
 
         self.current_direction = 0
@@ -87,7 +88,7 @@ class Melody(object):
             16: 1.25
         }
 
-        self.good_compilance_score = score = {
+        self.good_compilance_score = {
             2: 1.25,
             dots(4): 1.15,
             4: 1,
@@ -294,8 +295,6 @@ class Melody(object):
         current_note_score = interval * (current_note_compilance - 0.5)
         score += (last_note_score + current_note_score) / 2.0
 
-        # TODO Unusual intervals??
-
         # One pitch step
         chord_notes = chords.from_shorthand(self.current_chord)
         if interval >= 1:
@@ -393,67 +392,6 @@ class Melody(object):
 
         return Decimal(score)
 
-    # TODO calculate_note_length_n_interval_size
-    def calculate_note_length_n_interval_size(self, note):
-        ''' As can be seen in Figure 2, Section C there is a relationship
-        between note length and interval size. This is implemented in the
-        program so that the probability for a small interval size is higher
-        between shorter notes and the probability for a large interval size is
-        higher between longer notes.
-        '''
-
-        return 1
-
-    # TODO calculate_prase_arch
-    def calculate_prase_arch(self, note):
-        ''' Compliance with Huron's (2006) findings of convex phrase arches can
-        be ensured if the user choses to.
-        '''
-
-        return 1
-
-    # TODO calculate_tonal_resolution
-    def calculate_tonal_resolution(self, note):
-        ''' At the end of the refrain the melody will resolve at a tonic. This
-        may happen in the verse as well if there is a position where a dominant
-        V chord is followed by the tonic I. In Figure 7 we see statistical
-        findings for tonal resolution at the end of songs in the Essen Folksong
-        Collection (Elowsson, 2012). The gradually narrowing distance to the
-        tonic, as symbolized by arrows is achieved in the program by a
-        narrowing window.
-        '''
-
-        return 1
-
-    # TODO calculate_repetition
-    def calculate_repetition(self, note):
-        ''' Patterns in the melody repeat themselves over and over again both
-        at a rhythmical level and concerning pitch intervals. As we have seen
-        in Figure 1 much repetition comes at a phrase level and the program
-        uses earlier phrases as "mirrors" for the following phrases. If the
-        phrase is to repeat an earlier phrase, consideration is taken to how
-        the intervals between the notes in the phrase correspond to the
-        intervals of the notes in the mirror phrase. Consideration is also
-        taken separately to the difference in contour. The score is given by:
-
-            c . I
-
-        The differences in contour determine 'c'. The default setting is
-          * Same contour = 1.2
-          * Not same, not opposite contour = 0.9
-          * Opposite contour = 0.7
-
-        The values can be tuned by the user. The value of I is determined by
-        the interval I2 of the mirror phrase and the interval I1 of the current
-        phrase by the equation:
-
-            k^|I2-I1|
-
-        The constant k can be tuned by the user.
-        '''
-
-        return 1
-
     def calculate_good_continuation(self, note):
         ''' To give the melody a sense of direction a higher score is awarded
         to melodies that continue in a newly established direction. A
@@ -480,34 +418,22 @@ class Melody(object):
 
     def calculate_score(self, note, beat):
         score = 0
-        # 1. Ambitus
+        # Ambitus
         score += self.calculate_ambitus(note)
 
-        # 2. Harmonic Compilance
+        # Harmonic Compilance
         score += self.calculate_harmonic_compilance(note)
 
-        # 3. Intervals & Harmonic Compilance
+        # Intervals & Harmonic Compilance
         score += self.calculate_intervals_n_harmonic_compilante(note)
 
-        # 4. Note Length
+        # Note Length
         score += self.calculate_note_length(beat)
 
-        # 5. Note Length & Harmonic Compilance
+        # Note Length & Harmonic Compilance
         score += self.calculate_note_length_n_harmonic_compilance(note, beat)
 
-        # 6. Note Length & Interval Size
-        # score += self.calculate_note_length_n_interval_size(note)
-
-        # 7. Prase Arch
-        # score += self.calculate_prase_arch(note)
-
-        # 8. Tonal Resolution
-        # score += self.calculate_tonal_resolution(note)
-
-        # 9. Repetition
-        # score += self.calculate_repetition(note)
-
-        # 10. Good Continuation
+        # Good Continuation
         score += self.calculate_good_continuation(note)
 
         if score < 0:
