@@ -3,4 +3,4 @@ coverage==4.0
 numpy==1.9.2
 scipy==0.16.0
 m3-cdecimal==2.3
-git+git@github.com:mmarchini/python-mingus@786e137534a2aeb7753d58e5fd85483211ca1a6e#egg=mingus-master_modified
+git+https://github.com/mmarchini/python-mingus@786e137534a2aeb7753d58e5fd85483211ca1a6e#egg=mingus-master_modified
